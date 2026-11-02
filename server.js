@@ -129,7 +129,9 @@ function publicRoom(room) {
   return {
     code: room.code, stake: room.stake,
     green: room.green ? room.green.name : null,
+    greenUserId: room.green ? room.green.userId : null,
     red: room.red ? room.red.name : null,
+    redUserId: room.red ? room.red.userId : null,
     status: room.result ? "finished" : (room.green && room.red ? "ready" : "open")
   };
 }
@@ -184,7 +186,7 @@ io.on("connection", socket => {
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
     while (rooms.has(code)) code = makeCode();
-    const room = { code, stake, green: { id: socket.id, name: p.name, gems: p.gems, ready: false }, red: null, result: null };
+    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false }, red: null, result: null };
     rooms.set(code, room); p.room = code;
     socket.join(code);
     socket.emit("room:joined", code);
@@ -197,7 +199,7 @@ io.on("connection", socket => {
     const room = rooms.get(code);
     if (!room || room.red || room.result) return socket.emit("error:message", "That room is unavailable. Try refreshing the room list.");
     if (p.gems < room.stake) return socket.emit("error:message", "You don't have enough demo gems for this stake.");
-    room.red = { id: socket.id, name: p.name, gems: p.gems, ready: false };
+    room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false };
     p.room = code; socket.join(code);
     socket.emit("room:joined", code);
     roomUpdate(room); sendRooms();
