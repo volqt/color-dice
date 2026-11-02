@@ -59,3 +59,19 @@ footer{border-top:1px solid #242638;margin-top:12px}
 .phrasebox{background:#0e101a;border-color:#7561a7}
 @media(max-width:650px){.content{padding-top:16px}.hero{border-radius:16px}.cardbody{padding:12px}.panel{border-radius:13px}.top{position:sticky}.stats{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* Six-color dice and real Roblox player headshots */
+.art .color-die{position:absolute;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:space-around;flex-direction:column;line-height:.55;color:#fff;font-size:12px;box-shadow:0 12px 25px #0006,inset 0 1px 2px #ffffff77;border:1px solid #ffffff30}
+.art .green{background:linear-gradient(145deg,#5ce8a8,#17865e);right:190px;top:35px;transform:rotate(-13deg)}
+.art .yellow{background:linear-gradient(145deg,#ffe77c,#d6a92e);right:85px;top:30px;transform:rotate(11deg);color:#49330a}
+.art .orange{background:linear-gradient(145deg,#ffb45f,#e66a20);right:125px;top:112px;transform:rotate(-8deg)}
+.art .blue{background:linear-gradient(145deg,#79c9ff,#3476df);right:30px;top:125px;transform:rotate(13deg)}
+.art .red{background:linear-gradient(145deg,#ff8798,#d93d62);right:205px;top:170px;transform:rotate(14deg)}
+.art .green2{background:linear-gradient(145deg,#5ce8a8,#17865e);right:95px;top:205px;transform:rotate(-12deg);width:48px;height:48px;border-radius:13px}
+.roblox-avatar{width:76px;height:76px;object-fit:cover;border-radius:18px;border:2px solid #65548d;background:linear-gradient(145deg,#302747,#191b2b);box-shadow:0 7px 20px #0005}
+.greenbox .roblox-avatar{border-color:#3a986c}
+.redbox .roblox-avatar{border-color:#b44c62}
+.player strong{max-width:100%;text-align:center;overflow-wrap:anywhere}
+@media(max-width:900px){.art .green{right:150px}.art .yellow{right:45px}.art .orange{right:90px}.art .blue{right:5px}.art .red{right:160px}.art .green2{right:65px}}
+@media(max-width:650px){.art .color-die{opacity:.95}.art .green{right:140px;top:5px}.art .yellow{right:40px;top:0}.art .orange{right:85px;top:50px}.art .blue{right:5px;top:70px}.art .red{right:160px;top:78px}.art .green2{right:75px;top:95px}.roblox-avatar{width:62px;height:62px;border-radius:15px}}
