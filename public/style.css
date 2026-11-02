@@ -177,3 +177,6 @@ body{background:radial-gradient(ellipse at 70% -20%,#1e655044,transparent 42%),#
  #match .roblox-avatar{width:48px;height:48px}
  #match .pick-panel{padding:9px 12px;margin:8px 0}
 }
+
+#match .color-choice:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(.7);text-decoration:line-through}
+#match .color-choice.unavailable{border-style:dashed}
