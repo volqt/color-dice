@@ -60,6 +60,7 @@ function renderColorPicker(room) {
       else if (next.length < 2) next.push(color);
       else { toast("Choose only 2 different colors."); return; }
       socket.emit("room:colors", next);
+      if (next.length === 2) socket.emit("room:ready");
     });
     root.append(b);
   });
@@ -114,7 +115,7 @@ socket.on("room:update", room => {
   $("redPicks").textContent = "Picks: " + ((room.redColors || []).map(c => colorNames[c]).join(" + ") || "Choosing...");
   renderColorPicker(room);
   $("redReady").textContent = room.red ? (room.redReady ? "Ready ✓" : "Not ready") : "Open seat";
-  $("matchInfo").textContent = room.result ? "The duel is complete!" : ("Stake: " + room.stake + " demo gems each. Pick 2 colors, then both players get ready.");
+  $("matchInfo").textContent = room.result ? "The duel is complete!" : ("Stake: " + room.stake + " demo gems each. Pick 2 colors each — the dice roll automatically when both players finish.");
   $("ready").disabled = !room.green || !room.red || !!room.result || ((room.green === $("name").value && (room.greenReady || (room.greenColors || []).length !== 2)) || (room.red === $("name").value && (room.redReady || (room.redColors || []).length !== 2)));
   if (room.result) {
     $("ready").disabled = true;
