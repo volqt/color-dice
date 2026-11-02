@@ -6,12 +6,124 @@ const crypto = require("crypto");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+app.use(express.json({ limit: "10kb" }));
 app.use(express.static("public"));
 
 const rooms = new Map();
 const players = new Map();
+const challenges = new Map();
 const startingGems = 1000;
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
+const cookieName = "petroll_session";
+const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+
+function makeSession(user) {
+  const payload = Buffer.from(JSON.stringify({
+    id: user.id, username: user.name, exp: Date.now() + SESSION_MS
+  })).toString("base64url");
+  const signature = crypto.createHmac("sha256", sessionSecret).update(payload).digest("base64url");
+  return payload + "." + signature;
+}
+function readSessionToken(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const expected = crypto.createHmac("sha256", sessionSecret).update(parts[0]).digest();
+  let actual;
+  try { actual = Buffer.from(parts[1], "base64url"); } catch { return null; }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    if (!data.id || !data.username || data.exp < Date.now()) return null;
+    return data;
+  } catch { return null; }
+}
+function cookieToken(req) {
+  const raw = req.headers.cookie || "";
+  const found = raw.split(";").map(x => x.trim()).find(x => x.startsWith(cookieName + "="));
+  return found ? decodeURIComponent(found.slice(cookieName.length + 1)) : null;
+}
+function sessionFromRequest(req) { return readSessionToken(cookieToken(req)); }
+function sessionFromSocket(socket) {
+  const raw = socket.handshake.headers.cookie || "";
+  const found = raw.split(";").map(x => x.trim()).find(x => x.startsWith(cookieName + "="));
+  return found ? readSessionToken(decodeURIComponent(found.slice(cookieName.length + 1))) : null;
+}
+function requirePlayer(socket) {
+  const p = players.get(socket.id);
+  if (!p || !p.authenticated) {
+    socket.emit("error:message", "Connect and verify your Roblox account before playing.");
+    return null;
+  }
+  return p;
+}
+app.post("/api/roblox/start", async (req, res) => {
+  const username = String(req.body?.username || "").trim().replace(/^@/, "");
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+    return res.status(400).json({ error: "Enter a valid Roblox username (3–20 letters, numbers, or underscores)." });
+  }
+  try {
+    const response = await fetch("https://users.roblox.com/v1/usernames/users", {
+      method: "POST",
+      headers: { "content-type": "application/json", "accept": "application/json" },
+      body: JSON.stringify({ usernames: [username], excludeBannedUsers: false })
+    });
+    if (!response.ok) throw new Error("Roblox username lookup failed");
+    const data = await response.json();
+    const user = (data.data || []).find(u => String(u.name).toLowerCase() === username.toLowerCase());
+    if (!user) return res.status(404).json({ error: "We couldn't find that exact Roblox username. Check the spelling and try again." });
+    const phrase = "PETROLL-VERIFY-" + crypto.randomBytes(3).toString("hex").toUpperCase();
+    challenges.set(String(user.id), { id: user.id, username: user.name, phrase, expires: Date.now() + 10 * 60 * 1000 });
+    for (const [id, item] of challenges) if (item.expires < Date.now()) challenges.delete(id);
+    res.json({
+      userId: user.id, username: user.name, phrase,
+      profileUrl: "https://www.roblox.com/users/" + user.id + "/profile",
+      expiresInMinutes: 10
+    });
+  } catch (err) {
+    console.error("Roblox lookup error:", err.message);
+    res.status(502).json({ error: "Roblox couldn't be reached right now. Please try again in a moment." });
+  }
+});
+app.post("/api/roblox/verify", async (req, res) => {
+  const userId = String(req.body?.userId || "");
+  const challenge = challenges.get(userId);
+  if (!challenge || challenge.expires < Date.now()) {
+    challenges.delete(userId);
+    return res.status(400).json({ error: "Your verification phrase expired. Start again to get a new one." });
+  }
+  try {
+    const response = await fetch("https://users.roblox.com/v1/users/" + encodeURIComponent(userId), {
+      headers: { "accept": "application/json" }
+    });
+    if (!response.ok) throw new Error("Roblox profile lookup failed");
+    const profile = await response.json();
+    if (String(profile.id) !== userId || String(profile.name).toLowerCase() !== challenge.username.toLowerCase()) {
+      challenges.delete(userId);
+      return res.status(400).json({ error: "The Roblox profile did not match. Start verification again." });
+    }
+    if (!String(profile.description || "").toUpperCase().includes(challenge.phrase)) {
+      return res.status(400).json({ error: "Phrase not found yet. Add the exact phrase to your Roblox About/bio, save it, then try again." });
+    }
+    challenges.delete(userId);
+    const token = makeSession({ id: userId, name: challenge.username });
+    res.setHeader("Set-Cookie", cookieName + "=" + encodeURIComponent(token) + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=" + Math.floor(SESSION_MS / 1000));
+    res.json({ ok: true, username: challenge.username, userId });
+  } catch (err) {
+    console.error("Roblox verification error:", err.message);
+    res.status(502).json({ error: "We couldn't read the public Roblox profile right now. Please try again." });
+  }
+});
+app.get("/api/me", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session) return res.json({ authenticated: false });
+  res.json({ authenticated: true, username: session.username, userId: session.id });
+});
+app.post("/api/logout", (req, res) => {
+  res.setHeader("Set-Cookie", cookieName + "=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
+  res.json({ ok: true });
+});
 
 function publicRoom(room) {
   return {
@@ -51,17 +163,23 @@ function leaveRoom(socket) {
   sendRooms();
 }
 io.on("connection", socket => {
-  players.set(socket.id, { name: "Player", gems: startingGems, room: null });
+  const session = sessionFromSocket(socket);
+  const player = session
+    ? { name: session.username, userId: session.id, authenticated: true, gems: startingGems, room: null }
+    : { name: "Guest", userId: null, authenticated: false, gems: startingGems, room: null };
+  players.set(socket.id, player);
+  socket.emit("auth:status", { authenticated: player.authenticated, username: player.authenticated ? player.name : null });
   socket.emit("balance", startingGems);
   socket.emit("rooms:list", [...rooms.values()].filter(r => !r.red && !r.result).map(publicRoom));
-  socket.on("player:name", name => {
+  socket.on("player:name", () => {
+    // Verified Roblox usernames are the only allowed in-game names.
+    if (!requirePlayer(socket)) return;
     const p = players.get(socket.id);
-    if (p) p.name = String(name || "Player").trim().slice(0, 18) || "Player";
+    socket.emit("player:name", p.name);
   });
   socket.on("room:create", stakeValue => {
+    const p = requirePlayer(socket); if (!p) return;
     leaveRoom(socket);
-    const p = players.get(socket.id);
-    if (!p) return;
     const stake = Math.max(10, Math.min(200, Number(stakeValue) || 100));
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
@@ -73,11 +191,11 @@ io.on("connection", socket => {
     roomUpdate(room); sendRooms();
   });
   socket.on("room:join", rawCode => {
+    const p = requirePlayer(socket); if (!p) return;
     leaveRoom(socket);
-    const p = players.get(socket.id);
     const code = String(rawCode || "").trim().toUpperCase();
     const room = rooms.get(code);
-    if (!p || !room || room.red || room.result) return socket.emit("error:message", "That room is unavailable. Try refreshing the room list.");
+    if (!room || room.red || room.result) return socket.emit("error:message", "That room is unavailable. Try refreshing the room list.");
     if (p.gems < room.stake) return socket.emit("error:message", "You don't have enough demo gems for this stake.");
     room.red = { id: socket.id, name: p.name, gems: p.gems, ready: false };
     p.room = code; socket.join(code);
@@ -85,7 +203,7 @@ io.on("connection", socket => {
     roomUpdate(room); sendRooms();
   });
   socket.on("room:ready", () => {
-    const p = players.get(socket.id);
+    const p = requirePlayer(socket); if (!p) return;
     const room = p && rooms.get(p.room);
     if (!room || !room.green || !room.red || room.result) return;
     if (room.green.id === socket.id) room.green.ready = true;
