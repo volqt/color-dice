@@ -182,6 +182,33 @@ function leaveRoom(socket) {
   p.room = null;
   sendRooms();
 }
+function resolveRound(room) {
+  if (!room || !room.green || !room.red || room.result || room.green.colors.length !== 2 || room.red.colors.length !== 2) return;
+        const colors = ["red","orange","yellow","green","blue","purple"];
+        const dice = Array.from({length: 4}, () => colors[Math.floor(Math.random() * colors.length)]);
+        const scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
+        const scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
+        const winnerSide = scoreGreen === scoreRed ? "tie" : scoreGreen > scoreRed ? "green" : "red";
+        if (winnerSide === "tie") {
+          room.result = { winner: "tie", winnerName: null, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: "It's a tie! Both stakes are returned." };
+        } else {
+          const winner = room[winnerSide];
+          const loser = room[winnerSide === "green" ? "red" : "green"];
+          winner.gems += room.stake;
+          loser.gems -= room.stake;
+          const winnerPlayer = players.get(winner.id);
+          const loserPlayer = players.get(loser.id);
+          if (winnerPlayer) winnerPlayer.gems = winner.gems;
+          if (loserPlayer) loserPlayer.gems = loser.gems;
+          balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
+          balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
+          room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
+          if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
+          if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
+        }
+  
+}
+
 io.on("connection", socket => {
   const session = sessionFromSocket(socket);
   const player = session
@@ -243,6 +270,11 @@ io.on("connection", socket => {
     }
     if (isGreenPlayer) { room.green.colors = colors; room.green.ready = false; }
     else { room.red.colors = colors; room.red.ready = false; }
+    if (room.red && room.green.colors.length === 2 && room.red.colors.length === 2) {
+      room.green.ready = true;
+      room.red.ready = true;
+      resolveRound(room);
+    }
     roomUpdate(room);
   });
   socket.on("room:ready", () => {
@@ -253,30 +285,7 @@ io.on("connection", socket => {
     if (!side) return;
     if (room[side].colors.length !== 2) return socket.emit("error:message", "Pick exactly 2 colors before getting ready.");
     room[side].ready = true;
-    if (room.green.ready && room.red.ready) {
-      const colors = ["red","orange","yellow","green","blue","purple"];
-      const dice = Array.from({length: 4}, () => colors[Math.floor(Math.random() * colors.length)]);
-      const scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
-      const scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
-      const winnerSide = scoreGreen === scoreRed ? "tie" : scoreGreen > scoreRed ? "green" : "red";
-      if (winnerSide === "tie") {
-        room.result = { winner: "tie", winnerName: null, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: "It's a tie! Both stakes are returned." };
-      } else {
-        const winner = room[winnerSide];
-        const loser = room[winnerSide === "green" ? "red" : "green"];
-        winner.gems += room.stake;
-        loser.gems -= room.stake;
-        const winnerPlayer = players.get(winner.id);
-        const loserPlayer = players.get(loser.id);
-        if (winnerPlayer) winnerPlayer.gems = winner.gems;
-        if (loserPlayer) loserPlayer.gems = loser.gems;
-        balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
-        balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
-        room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
-        if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
-        if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
-      }
-    }
+    if (room.green.ready && room.red.ready) resolveRound(room);
     roomUpdate(room);
   });
   socket.on("room:leave", () => { leaveRoom(socket); socket.emit("room:left"); });
