@@ -180,3 +180,61 @@ body{background:radial-gradient(ellipse at 70% -20%,#1e655044,transparent 42%),#
 
 #match .color-choice:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(.7);text-decoration:line-through}
 #match .color-choice.unavailable{border-style:dashed}
+
+
+/* PetRoll duel-room visual refresh inspired by the reference: dark arena, bright dice, clear player lanes */
+:root{--bg:#0b0d16;--panel:#141725;--line:#282d43;--text:#f5f7ff;--muted:#8f96ad;--purple:#3275ff;--green:#00d98a;--red:#ff4c66}
+body{background:radial-gradient(ellipse at 50% -30%,#1a2b4b 0%,transparent 55%),#0b0d16}
+.sidebar{background:#10131e;border-right-color:#20263a}
+.logo,.authlogo{background:linear-gradient(145deg,#3585ff,#174cbd);box-shadow:0 8px 25px #276cff30}
+.accent,.hero h1 span,.authcard h1 span{color:#4c8bff}
+.nav.active,.nav:hover{background:#1a2b4a;box-shadow:inset 3px 0 #3275ff}
+.top{background:#0e111b;border-bottom-color:#22283a}
+.balance{background:#17223b;border-color:#293c63}
+.balance small{color:#75a7ff}
+.banner{background:#172541;border-color:#2a3e65;color:#c6d5f5}
+.banner a{color:#78a9ff}
+.hero{background:radial-gradient(ellipse at 78% 50%,#2870ff30,transparent 40%),linear-gradient(110deg,#151e32,#111725);border-color:#293d65}
+.hero h1 span{color:#68a0ff}
+.button{background:linear-gradient(115deg,#3c82ff,#2057dd);color:#fff;box-shadow:0 7px 22px #276cff45}
+.small{background:#1b2a47;color:#c9dcff}
+.ghost{background:#151b2a;border-color:#2d3851;color:#c3ccdf}
+.card,.panel{background:linear-gradient(145deg,#151a2a,#111622);border-color:#293148}
+.card[href]:hover{border-color:#3e7cff}
+.cardart{background:radial-gradient(ellipse at center,#2e70ff2b,transparent 70%),#171e30}
+.cardart.gold{background:#29251d}
+.cardart.blue{background:#17263a}
+.pill{background:#133a32;color:#55edb0}
+.pill.soon{background:#20283a;color:#b1bfd9}
+.cardbody>b{color:#75a7ff;border-top-color:#293148}
+.inputrow input,.create select{background:#0b101a;border-color:#2b344a}
+.inputrow input:focus,.create select:focus{border-color:#397cff;box-shadow:0 0 0 3px #397cff20}
+.room{background:#101725;border-color:#28334b}
+.room:hover{border-color:#3a72d9}
+.room button{background:#172b4b;border-color:#315a9b;color:#c9dcff}
+.notice{background:#14233c;border-color:#2a426b;color:#c7d9f9}
+.guideicon{background:#1b2d4c}
+.overlay{background:#050711e8;backdrop-filter:blur(10px)}
+#match .modal{background:linear-gradient(150deg,#151b2b,#0f1420);border:1px solid #2b3d5e;box-shadow:0 30px 100px #000b}
+#match .player{background:linear-gradient(145deg,#141c2b,#0d1520);border-color:#2a3b57}
+#match .greenbox{border-color:#217d62}
+#match .redbox{border-color:#813348}
+#match .pick-panel{background:#101522;border-color:#29344b}
+#match .color-choice{background:#1b2234;border-color:#303b54;color:#e4eaff}
+#match .color-choice.selected{background:#1d3155;box-shadow:inset 0 0 0 1px currentColor}
+#match .color-choice:disabled{opacity:.28}
+#match .result{background:#172b4d;border-color:#315caa;color:#e4eeff}
+.dice-results{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 17px}
+.die-face{width:72px;height:72px;display:grid;place-items:center;border-radius:17px;border:3px solid #ffffffb8;color:#fff;font-size:0;position:relative;box-shadow:0 7px 25px #0006,inset 0 1px 0 #ffffff77;animation:diePop .42s both cubic-bezier(.2,.9,.2,1.2)}
+.die-face:after{content:"";width:18px;height:18px;background:#fff;border-radius:50%;box-shadow:0 1px 2px #0003}
+.die-red{background:#f04424;border-color:#ffb39e;box-shadow:0 0 20px #f0442444}
+.die-orange{background:#f45b12;border-color:#ffc09c;box-shadow:0 0 20px #f45b1244}
+.die-yellow{background:#ffca16;border-color:#fff0a0;box-shadow:0 0 20px #ffca1644}
+.die-green{background:#0fae75;border-color:#9bffcf;box-shadow:0 0 20px #0fae7544}
+.die-blue{background:#2868ec;border-color:#a8c7ff;box-shadow:0 0 20px #2868ec55}
+.die-purple{background:#8a45e9;border-color:#d6b4ff;box-shadow:0 0 20px #8a45e955}
+.scoreline{margin:8px 0;color:#a9b7d1;font-size:12px}
+#result>strong{display:block;font-size:20px;margin:5px 0 7px;color:#f5f8ff}
+#result>small{display:block;color:#91a2c0;margin-top:5px}
+@keyframes diePop{from{opacity:0;transform:translateY(12px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:650px){.hero{background:radial-gradient(ellipse at 80% 70%,#2870ff30,transparent 48%),linear-gradient(110deg,#151e32,#111725)}.die-face{width:54px;height:54px;border-radius:13px}.die-face:after{width:14px;height:14px}}
