@@ -78,7 +78,7 @@ function formatGems(value) {
   else if (abs >= 1000000) { amount = gems / 1000000; suffix = "M"; }
   else if (abs >= 1000) { amount = gems / 1000; suffix = "K"; }
   if (!suffix) return gems.toLocaleString();
-  let rounded = amount.toFixed(abs >= 10000000000 || (abs >= 10000000 && abs < 1000000000) || (abs >= 10000 && abs < 1000000) ? 0 : 1);
+  let rounded = amount.toFixed(suffix === "B" ? 1 : (abs >= 10000000 && abs < 1000000000) || (abs >= 10000 && abs < 1000000) ? 0 : 1);
   if (rounded.endsWith(".0")) rounded = rounded.slice(0, -2);
   return rounded + suffix;
 }
