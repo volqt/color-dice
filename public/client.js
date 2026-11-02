@@ -44,14 +44,13 @@ function renderColorPicker(room) {
   const isMineGreen = isGreen || (!myId && String(room.green || "").toLowerCase() === String($("name").value).trim().toLowerCase());
   const mine = isMineGreen ? (room.greenColors || []) : (room.redColors || []);
   Object.keys(colorNames).forEach(color => {
-    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(mine.includes(color)));
-    b.className = "color-choice color-" + color + (mine.includes(color) ? " selected" : "");
-    b.textContent = colorNames[color];
+    const count = mine.filter(pick => pick === color).length;
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(count > 0));
+    b.className = "color-choice color-" + color + (count ? " selected" : "");
+    b.textContent = colorNames[color] + (count > 1 ? " ×" + count : count === 1 ? " ✓" : "");
     b.addEventListener("click", () => {
-      const next = [...mine]; const idx = next.indexOf(color);
-      if (idx >= 0) next.splice(idx, 1);
-      else if (next.length < 2) next.push(color);
-      else { toast("Choose only 2 colors."); return; }
+      const next = mine.length >= 2 ? [] : [...mine];
+      next.push(color);
       socket.emit("room:colors", next);
     });
     root.append(b);
