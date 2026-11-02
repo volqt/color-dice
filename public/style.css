@@ -133,3 +133,47 @@ body{background:radial-gradient(ellipse at 70% -20%,#1e655044,transparent 42%),#
 .authcard h1 span{color:#67e8b3}
 .phrasebox{background:#0c151e;border-color:#3b8068}
 @media(max-width:650px){.hero{background:radial-gradient(ellipse at 80% 70%,#36b98730,transparent 48%),linear-gradient(115deg,#152b2c,#111e2b 80%)}}
+
+
+/* Match modal: wider, more compact, and reliable clickable controls */
+#match{z-index:120;padding:12px;overflow-y:auto;align-items:center}
+#match .modal{position:relative;width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 24px);overflow-y:auto;padding:18px 20px;border-radius:16px}
+#match .modalhead{margin-bottom:4px}
+#match .modal h2{font-size:21px}
+#match #matchInfo{margin:5px 0 13px}
+#match .versus{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:12px;margin:12px 0 15px}
+#match .player{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:12px;row-gap:5px;justify-items:start;align-content:center;min-height:108px;padding:12px 14px}
+#match .roblox-avatar{grid-column:1;grid-row:1 / span 3;width:60px;height:60px;border-radius:14px;object-fit:cover;display:block}
+#match .player strong,#match .player small,#match .player b{grid-column:2;text-align:left;min-width:0}
+#match .player strong{font-size:12px;align-self:end}
+#match .player small{font-size:10px}
+#match .player b{font-size:8px}
+#match .pick-panel{position:relative;z-index:1;margin:12px 0;padding:13px 14px;background:#111722;border-color:#2d3d4e}
+#match .pick-panel>strong{font-size:13px}
+#match .pick-panel .sub{margin:4px 0 9px}
+#match .color-picker{position:relative;z-index:2;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+#match .color-choice{position:relative;z-index:3;min-height:36px;padding:8px 5px;pointer-events:auto;touch-action:manipulation;cursor:pointer;border-color:#3a4356;background:#202638;font-size:11px}
+#match .color-choice:hover{filter:brightness(1.2);transform:translateY(-1px)}
+#match .color-choice.selected{background:#29394a;box-shadow:inset 0 0 0 1px currentColor}
+#match .modalactions{margin-top:12px}
+#match .modalactions .button,#match .modalactions .small{min-height:38px;padding:10px 15px}
+#match .avatar-empty{object-fit:cover}
+@media(max-width:620px){
+ #match{padding:8px}
+ #match .modal{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:14px}
+ #match .versus{gap:5px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr)}
+ #match .player{grid-template-columns:1fr;grid-template-rows:auto auto auto auto;justify-items:center;text-align:center;padding:10px 5px;gap:5px;min-height:0}
+ #match .roblox-avatar{grid-column:1;grid-row:1;width:48px;height:48px;margin-bottom:2px}
+ #match .player strong,#match .player small,#match .player b{grid-column:1;text-align:center}
+ #match .player strong{font-size:10px}
+ #match .player small{font-size:9px}
+ #match .color-picker{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #match .color-choice{min-height:34px}
+}
+@media(max-height:650px){
+ #match .modal{max-height:calc(100dvh - 12px);padding:12px 16px}
+ #match .versus{margin:8px 0}
+ #match .player{min-height:86px;padding:8px 12px}
+ #match .roblox-avatar{width:48px;height:48px}
+ #match .pick-panel{padding:9px 12px;margin:8px 0}
+}
