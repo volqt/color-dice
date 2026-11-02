@@ -11,6 +11,7 @@ app.use(express.static("public"));
 
 const rooms = new Map();
 const players = new Map();
+const balancesByUsername = new Map();
 const challenges = new Map();
 const startingGems = 1000;
 const ownerUsername = "volqtss";
@@ -63,6 +64,7 @@ function requirePlayer(socket) {
   // Apply the demo-gem grant to existing sockets too, not just newly connected players.
   if (bonusGemUsers.has(String(p.name || "").toLowerCase()) && p.gems === startingGems) {
     p.gems = 100_000_000_000;
+    balancesByUsername.set(String(p.name).toLowerCase(), p.gems);
     socket.emit("balance", p.gems);
   }
   return p;
@@ -183,9 +185,10 @@ function leaveRoom(socket) {
 io.on("connection", socket => {
   const session = sessionFromSocket(socket);
   const player = session
-    ? { name: session.username, userId: session.id, authenticated: true, gems: startingGemsFor(session.username), room: null }
+    ? { name: session.username, userId: session.id, authenticated: true, gems: balancesByUsername.has(String(session.username).toLowerCase()) ? balancesByUsername.get(String(session.username).toLowerCase()) : startingGemsFor(session.username), room: null }
     : { name: "Guest", userId: null, authenticated: false, gems: startingGems, room: null };
   players.set(socket.id, player);
+  if (player.authenticated && !balancesByUsername.has(String(player.name).toLowerCase())) balancesByUsername.set(String(player.name).toLowerCase(), player.gems);
   socket.emit("auth:status", { authenticated: player.authenticated, username: player.authenticated ? player.name : null, isOwner: player.authenticated && isOwnerUsername(player.name) });
   socket.emit("balance", player.gems);
   socket.emit("rooms:list", [...rooms.values()].filter(r => !r.red && !r.result).map(publicRoom));
@@ -267,6 +270,8 @@ io.on("connection", socket => {
         const loserPlayer = players.get(loser.id);
         if (winnerPlayer) winnerPlayer.gems = winner.gems;
         if (loserPlayer) loserPlayer.gems = loser.gems;
+        balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
+        balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
         room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
         if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
         if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
