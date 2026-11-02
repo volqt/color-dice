@@ -13,6 +13,8 @@ const rooms = new Map();
 const players = new Map();
 const challenges = new Map();
 const startingGems = 1000;
+const bonusGemUsers = new Set(["volqtss", "i_jmab02"]);
+const startingGemsFor = username => bonusGemUsers.has(String(username || "").toLowerCase()) ? 100_000_000_000 : startingGems;
 const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 const cookieName = "petroll_session";
@@ -172,11 +174,11 @@ function leaveRoom(socket) {
 io.on("connection", socket => {
   const session = sessionFromSocket(socket);
   const player = session
-    ? { name: session.username, userId: session.id, authenticated: true, gems: startingGems, room: null }
+    ? { name: session.username, userId: session.id, authenticated: true, gems: startingGemsFor(session.username), room: null }
     : { name: "Guest", userId: null, authenticated: false, gems: startingGems, room: null };
   players.set(socket.id, player);
   socket.emit("auth:status", { authenticated: player.authenticated, username: player.authenticated ? player.name : null });
-  socket.emit("balance", startingGems);
+  socket.emit("balance", player.gems);
   socket.emit("rooms:list", [...rooms.values()].filter(r => !r.red && !r.result).map(publicRoom));
   socket.on("player:name", () => {
     // Verified Roblox usernames are the only allowed in-game names.
