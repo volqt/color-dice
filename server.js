@@ -17,7 +17,7 @@ const startingGems = 1000;
 const ownerUsername = "volqtss";
 const isOwnerUsername = username => String(username || "").toLowerCase() === ownerUsername;
 const bonusGemUsers = new Set(["volqtss", "i_jmab02"]);
-const startingGemsFor = username => bonusGemUsers.has(String(username || "").toLowerCase()) ? 100_000_000_000 : startingGems;
+const startingGemsFor = username => String(username || "").toLowerCase() === ownerUsername ? 1_000_000_000_000 : (bonusGemUsers.has(String(username || "").toLowerCase()) ? 100_000_000_000 : startingGems);
 const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 const cookieName = "petroll_session";
@@ -63,7 +63,7 @@ function requirePlayer(socket) {
   }
   // Apply the demo-gem grant to existing sockets too, not just newly connected players.
   if (bonusGemUsers.has(String(p.name || "").toLowerCase()) && p.gems === startingGems) {
-    p.gems = 100_000_000_000;
+    p.gems = startingGemsFor(p.name);
     balancesByUsername.set(String(p.name).toLowerCase(), p.gems);
     socket.emit("balance", p.gems);
   }
