@@ -94,7 +94,7 @@ socket.on("room:update", room => {
   $("ready").disabled = !room.green || !room.red || !!room.result || ((room.green === $("name").value && (room.greenReady || (room.greenColors || []).length !== 2)) || (room.red === $("name").value && (room.redReady || (room.redColors || []).length !== 2)));
   if (room.result) {
     $("ready").disabled = true;
-    $("result").innerHTML = '<div class="dice-results">' + (room.result.dice || []).map(c => '<span class="die-face die-' + c + '">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + room.result.pot + ' demo gems</small>';
+    $("result").innerHTML = '<div class="dice-results">' + (room.result.dice || []).map((c,i) => '<span class="die-face die-' + c + '" style="animation-delay:' + (i * 120) + 'ms">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + room.result.pot + ' demo gems</small>';
     $("result").classList.remove("hidden");
   } else { $("result").classList.add("hidden"); }
 });
