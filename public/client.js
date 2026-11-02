@@ -31,7 +31,7 @@ function sendName() {
 }
 $("saveName").addEventListener("click", sendName);
 $("name").addEventListener("change", () => socket.emit("player:name", $("name").value.trim() || "Player"));
-$("create").addEventListener("click", () => { sendName(); socket.emit("room:create", Number($("stake").value)); });
+$("create").addEventListener("click", () => { sendName(); socket.emit("room:create", $("stake").value.trim()); });
 $("refresh").addEventListener("click", () => socket.emit("rooms:refresh"));
 $("ready").addEventListener("click", () => socket.emit("room:ready"));
 const colorNames = {red:"Red",orange:"Orange",yellow:"Yellow",green:"Green",blue:"Blue",purple:"Purple"};
