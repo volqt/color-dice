@@ -222,7 +222,7 @@ io.on("connection", socket => {
     const room = p.room && rooms.get(p.room);
     if (!room || !room.green || room.result) return;
     const allowed = ["red","orange","yellow","green","blue","purple"];
-    const colors = Array.isArray(rawColors) ? [...new Set(rawColors.filter(c => allowed.includes(c)))].slice(0, 2) : [];
+    const colors = Array.isArray(rawColors) ? rawColors.filter(c => allowed.includes(c)).slice(0, 2) : [];
     if (room.green.id === socket.id) { room.green.colors = colors; room.green.ready = false; }
     else if (room.red.id === socket.id) { room.red.colors = colors; room.red.ready = false; }
     else return;
@@ -239,8 +239,9 @@ io.on("connection", socket => {
     if (room.green.ready && room.red.ready) {
       const colors = ["red","orange","yellow","green","blue","purple"];
       const dice = Array.from({length: 4}, () => colors[Math.floor(Math.random() * colors.length)]);
-      const scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
-      const scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
+      const scoreFor = picks => dice.reduce((score, die) => score + picks.filter(pick => pick === die).length, 0);
+      const scoreGreen = scoreFor(room.green.colors);
+      const scoreRed = scoreFor(room.red.colors);
       const winnerSide = scoreGreen === scoreRed ? "tie" : scoreGreen > scoreRed ? "green" : "red";
       if (winnerSide === "tie") {
         room.result = { winner: "tie", winnerName: null, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: "It's a tie! Both stakes are returned." };
