@@ -75,3 +75,61 @@ footer{border-top:1px solid #242638;margin-top:12px}
 .player strong{max-width:100%;text-align:center;overflow-wrap:anywhere}
 @media(max-width:900px){.art .green{right:150px}.art .yellow{right:45px}.art .orange{right:90px}.art .blue{right:5px}.art .red{right:160px}.art .green2{right:65px}}
 @media(max-width:650px){.art .color-die{opacity:.95}.art .green{right:140px;top:5px}.art .yellow{right:40px;top:0}.art .orange{right:85px;top:50px}.art .blue{right:5px;top:70px}.art .red{right:160px;top:78px}.art .green2{right:75px;top:95px}.roblox-avatar{width:62px;height:62px;border-radius:15px}}
+
+
+/* PetRoll arcade redesign: bold game hub, dark slate surfaces, vivid mint accents */
+:root{--bg:#0b1018;--panel:#121b27;--line:#253545;--text:#f4f8fc;--muted:#8fa2b5;--purple:#9c8cff;--green:#59e6aa;--red:#ff718b}
+body{background:radial-gradient(ellipse at 70% -20%,#1e655044,transparent 42%),#0b1018;color:var(--text)}
+.sidebar{background:#0e1722;border-right:1px solid #213344}
+.logo{background:linear-gradient(145deg,#62edb1,#208e70);box-shadow:0 8px 24px #35c99135}
+.accent{color:#67e6b1}
+.label,.eyebrow{color:#71d9b0}
+.nav{color:#a5b7c8}
+.nav.active,.nav:hover{background:linear-gradient(100deg,#173e36,#142a2b);border-color:#276653;box-shadow:inset 3px 0 #58e4aa;color:#f7fffb}
+.sidebottom{background:#12231f;border-color:#275343}
+.online{box-shadow:0 0 12px #54e6a6}
+.top{background:rgba(10,17,25,.9);border-bottom-color:#213344}
+.balance,.accountchip{background:#142a27;border-color:#28604f}
+.balance small{color:#6fe9b6}
+.banner{background:linear-gradient(100deg,#14352e,#17272c);border-color:#275547;color:#c5e7d9}
+.banner a{color:#72edba}
+.hero{background:radial-gradient(ellipse at 80% 35%,#36b98732,transparent 42%),linear-gradient(115deg,#152b2c,#111e2b 80%);border-color:#28594c;box-shadow:0 22px 55px #0004}
+.hero h1 span{color:#67e8b3}
+.hero p{color:#b2c8c9}
+.button{background:linear-gradient(115deg,#5ce7ae,#269b79);color:#062219;box-shadow:0 8px 24px #39c99330,inset 0 1px #ffffff66}
+.button:hover{box-shadow:0 12px 30px #39c99355,inset 0 1px #ffffff77}
+.small{background:#1a3934;color:#c6f7e4}
+.ghost{background:#131f2b;border-color:#2b4050;color:#c0cfdb}
+.stats small{color:#91b6ac}
+.card{background:linear-gradient(155deg,#152230,#111a25);border-color:#273a4a}
+.card[href]:hover{border-color:#3cae87;box-shadow:0 16px 35px #0005}
+.cardart{background:radial-gradient(ellipse at 50% 70%,#35c78c30,transparent 60%),linear-gradient(145deg,#1a3435,#172432)}
+.cardart.gold{background:radial-gradient(ellipse at center,#d7a74b20,transparent 65%),#24251f}
+.cardart.blue{background:radial-gradient(ellipse at center,#4b9ecb24,transparent 65%),#172633}
+.pill{background:#173d31;color:#6ff0b7;border-color:#28674f}
+.pill.soon{background:#1b2937;color:#a8bacb;border-color:#2e4050}
+.cardbody>b{color:#72e8b7;border-top-color:#273a49}
+.panel{background:linear-gradient(145deg,rgba(19,30,42,.98),rgba(14,23,33,.98));border-color:#2a3c4b}
+.panel label{color:#9db3c2}
+.inputrow input,.create select{background:#0b141e;border-color:#2a4050;color:#f4f8fc}
+.inputrow input:focus,.create select:focus{border-color:#4bd6a1;box-shadow:0 0 0 3px #4bd6a11b}
+.inputrow input::placeholder{color:#71879a}
+.room{background:linear-gradient(100deg,#0f1a25,#14212c);border-color:#263b4b}
+.room:hover{border-color:#347d65}
+.room button{background:#173a32;border-color:#2c6c56;color:#baf5dd}
+.room button:hover{background:#205845;border-color:#4bd6a1}
+.guideicon{background:#173a32}
+.notice{background:linear-gradient(100deg,#17332f,#142530);border-color:#2c594c;color:#b9d9d2}
+.modal{background:linear-gradient(145deg,#172532,#101923);border-color:#365247}
+.roomcode{background:#183b33;color:#a7f1d2}
+.player{background:linear-gradient(145deg,#14222e,#0e1822);border-color:#2a3e4d}
+.greenbox{border-color:#347b5e}
+.redbox{border-color:#71404a}
+.result{background:linear-gradient(100deg,#173c32,#17302d);border-color:#3a8e6c;color:#d1ffeb}
+.toast{background:#17372f;border-color:#3d8e70;color:#e4fff3}
+.authgate{background:rgba(5,11,16,.9)}
+.authcard{background:radial-gradient(ellipse at 100% 0%,#35c78c18,transparent 40%),linear-gradient(145deg,#172633,#0f1923);border-color:#2e594a}
+.authlogo{background:linear-gradient(145deg,#62edb1,#208e70);box-shadow:0 9px 28px #35c99133}
+.authcard h1 span{color:#67e8b3}
+.phrasebox{background:#0c151e;border-color:#3b8068}
+@media(max-width:650px){.hero{background:radial-gradient(ellipse at 80% 70%,#36b98730,transparent 48%),linear-gradient(115deg,#152b2c,#111e2b 80%)}}
