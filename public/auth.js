@@ -73,7 +73,7 @@ auth$("logout").addEventListener("click", async () => {
 });
 (async () => {
   try {
-    const response = await fetch("/api/me", { credentials: "same-origin" });
+    const response = await fetch("/api/me", { credentials: "same-origin", cache: "no-store" });
     const me = await response.json();
     if (me.authenticated) {
       auth$("authGate").classList.add("hidden");
