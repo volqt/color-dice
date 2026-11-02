@@ -16,11 +16,6 @@ function sendName() {
 $("saveName").addEventListener("click", sendName);
 $("name").addEventListener("change", () => socket.emit("player:name", $("name").value.trim() || "Player"));
 $("create").addEventListener("click", () => { sendName(); socket.emit("room:create", Number($("stake").value)); });
-$("join").addEventListener("click", () => {
-  sendName(); const code = $("roomCode").value.trim().toUpperCase();
-  if (!code) return toast("Enter a room code first.");
-  socket.emit("room:join", code);
-});
 $("refresh").addEventListener("click", () => socket.emit("rooms:refresh"));
 $("ready").addEventListener("click", () => socket.emit("room:ready"));
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
@@ -29,18 +24,18 @@ function hideMatch() { $("match").classList.add("hidden"); currentRoom = null; l
 socket.on("balance", gems => { $("balance").textContent = Number(gems).toLocaleString(); });
 socket.on("error:message", message => toast(message));
 socket.on("room:joined", code => {
-  currentRoom = code; lastRoom = code; $("roomBadge").textContent = "ROOM " + code;
-  $("created").innerHTML = "Room created! Share code <strong>" + code + "</strong> with your friend.";
+  currentRoom = code; lastRoom = code; $("roomBadge").textContent = "MATCH READY";
+  $("created").textContent = "Match created! You’re waiting for an opponent to join from Open rooms.";
   $("created").classList.remove("hidden"); showMatch();
 });
 socket.on("room:left", () => { hideMatch(); toast("You left the room."); });
 socket.on("rooms:list", rooms => {
   const root = $("rooms"); root.innerHTML = "";
-  if (!rooms.length) { root.innerHTML = '<p class="sub">No open rooms right now. Create one and invite a friend!</p>'; return; }
+  if (!rooms.length) { root.innerHTML = '<p class="sub">No open matches right now. Press Create to start one.</p>'; return; }
   rooms.forEach(room => {
     const row = document.createElement("div"); row.className = "room";
     const info = document.createElement("div");
-    const name = document.createElement("strong"); name.textContent = room.code + " · " + (room.green || "Player");
+    const name = document.createElement("strong"); name.textContent = (room.green || "Player") + " · Open match";
     const detail = document.createElement("small"); detail.textContent = "💎 " + room.stake + " gems · Waiting for opponent";
     info.append(name, detail);
     const btn = document.createElement("button"); btn.textContent = "Join →";
