@@ -57,7 +57,20 @@ function renderColorPicker(room) {
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
 function showMatch() { $("match").classList.remove("hidden"); }
 function hideMatch() { $("match").classList.add("hidden"); currentRoom = null; lastRoom = null; $("result").classList.add("hidden"); $("ready").disabled = true; $("ready").textContent = "I'm ready"; }
-socket.on("balance", gems => { $("balance").textContent = Number(gems).toLocaleString(); });
+function formatGems(value) {
+  const gems = Number(value) || 0;
+  const abs = Math.abs(gems);
+  let amount = gems;
+  let suffix = "";
+  if (abs >= 1000000000) { amount = gems / 1000000000; suffix = "B"; }
+  else if (abs >= 1000000) { amount = gems / 1000000; suffix = "M"; }
+  else if (abs >= 1000) { amount = gems / 1000; suffix = "K"; }
+  if (!suffix) return gems.toLocaleString();
+  let rounded = amount.toFixed(abs >= 10000000000 || (abs >= 10000000 && abs < 1000000000) || (abs >= 10000 && abs < 1000000) ? 0 : 1);
+  if (rounded.endsWith(".0")) rounded = rounded.slice(0, -2);
+  return rounded + suffix;
+}
+socket.on("balance", gems => { $("balance").textContent = formatGems(gems); });
 socket.on("error:message", message => toast(message));
 socket.on("room:joined", code => {
   currentRoom = code; lastRoom = code; $("roomBadge").textContent = "MATCH READY";
