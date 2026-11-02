@@ -241,3 +241,11 @@ body{background:radial-gradient(ellipse at 50% -30%,#1a2b4b 0%,transparent 55%),
 
 /* No manual ready-up needed; selecting two colors readies the player automatically. */
 #match #ready{display:none!important}
+
+/* Private per-match chat */
+.game-chat{margin:14px 0;padding:12px;background:#0c1220;border:1px solid #293750;border-radius:12px;text-align:left}
+.chat-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.chat-heading strong{font-size:13px;color:#e8efff}.chat-heading small{font-size:10px;color:#8293b2}
+.chat-messages{height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:9px;background:#090e18;border:1px solid #202b40;border-radius:8px}.chat-empty{margin:auto;color:#71819e;font-size:12px;text-align:center}
+.chat-message{max-width:88%;align-self:flex-start;padding:7px 9px;background:#172238;border:1px solid #273a59;border-radius:9px}.chat-message.mine{align-self:flex-end;background:#17315a;border-color:#2b5794}
+.chat-message strong{font-size:11px;color:#8db8ff}.chat-message p{margin:3px 0 2px;color:#f1f5ff;font-size:12px;overflow-wrap:anywhere;white-space:pre-wrap}.chat-message small{display:block;text-align:right;color:#8191ac;font-size:9px}
+.chat-form{display:flex;gap:7px;margin-top:8px}.chat-form input{min-width:0;flex:1;padding:10px;border:1px solid #2b3850;border-radius:8px;background:#0b101a;color:#f5f7ff;outline:none}.chat-form input:focus{border-color:#397cff}.chat-form .button{padding:9px 13px;font-size:12px}
