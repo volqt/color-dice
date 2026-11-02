@@ -58,6 +58,11 @@ function requirePlayer(socket) {
     socket.emit("error:message", "Connect and verify your Roblox account before playing.");
     return null;
   }
+  // Apply the demo-gem grant to existing sockets too, not just newly connected players.
+  if (bonusGemUsers.has(String(p.name || "").toLowerCase()) && p.gems === startingGems) {
+    p.gems = 100_000_000_000;
+    socket.emit("balance", p.gems);
+  }
   return p;
 }
 app.post("/api/roblox/start", async (req, res) => {
