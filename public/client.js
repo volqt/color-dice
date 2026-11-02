@@ -67,6 +67,15 @@ function renderColorPicker(room) {
   $("colorHint").textContent = "Choose 2 different colors (" + mine.length + "/2). Colors picked by your opponent are unavailable.";
 }
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
+function addChatMessage(message) {
+ const root=$("chatMessages"); if(!root)return; const empty=root.querySelector(".chat-empty"); if(empty)empty.remove();
+ const row=document.createElement("div"); row.className="chat-message"+(String(message.username).toLowerCase()===String(window.petrollUsername||"").toLowerCase()?" mine":"");
+ const author=document.createElement("strong"); author.textContent=message.username||"Player";
+ const body=document.createElement("p"); body.textContent=message.text||"";
+ const time=document.createElement("small"); time.textContent=new Date(message.time||Date.now()).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+ row.append(author,body,time); root.append(row); while(root.children.length>50)root.firstElementChild.remove(); root.scrollTop=root.scrollHeight;
+}
+$("chatForm").addEventListener("submit",event=>{event.preventDefault();const text=$("chatInput").value.trim();if(!text||!currentRoom)return;socket.emit("chat:send",text);$("chatInput").value="";});
 function showMatch() { $("match").classList.remove("hidden"); }
 function hideMatch() { $("match").classList.add("hidden"); currentRoom = null; lastRoom = null; $("result").classList.add("hidden"); $("ready").disabled = true; $("ready").textContent = "I'm ready"; }
 function formatGems(value) {
@@ -85,7 +94,7 @@ function formatGems(value) {
 socket.on("balance", gems => { $("balance").textContent = formatGems(gems); });
 socket.on("error:message", message => toast(message));
 socket.on("room:joined", code => {
-  currentRoom = code; lastRoom = code; $("roomBadge").textContent = "MATCH READY";
+  currentRoom = code; lastRoom = code; $("chatMessages").innerHTML = '<p class="chat-empty">Say hello to your opponent!</p>'; $("roomBadge").textContent = "MATCH READY";
   $("created").textContent = "You’re in the match! Wait for the other player to join or get ready.";
   $("created").classList.remove("hidden"); showMatch();
 });
@@ -104,6 +113,8 @@ socket.on("rooms:list", rooms => {
     row.append(info, btn); root.append(row);
   });
 });
+socket.on("chat:history",data=>{if(!currentRoom||data.code!==currentRoom)return;$("chatMessages").innerHTML="";(data.messages||[]).forEach(addChatMessage);if(!data.messages||!data.messages.length)$("chatMessages").innerHTML='<p class="chat-empty">Say hello to your opponent!</p>';});
+socket.on("chat:message",message=>{if(currentRoom&&message.code===currentRoom)addChatMessage(message);});
 socket.on("room:update", room => {
   if (!currentRoom || room.code !== currentRoom) return;
   $("greenName").textContent = room.green || "Waiting for host…";
