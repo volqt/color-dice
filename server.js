@@ -198,8 +198,11 @@ io.on("connection", socket => {
   socket.on("room:create", stakeValue => {
     const p = requirePlayer(socket); if (!p) return;
     leaveRoom(socket);
-    const requestedStake = Number(stakeValue);
-    const stake = Number.isFinite(requestedStake) ? Math.floor(Math.max(10, Math.min(1000000000, requestedStake))) : 100;
+    const stakeText = String(stakeValue ?? "100").trim().toLowerCase().replace(/[,_\s]/g, "");
+    const stakeMatch = stakeText.match(/^([0-9]+(?:\.[0-9]+)?)([kmb])?$/);
+    const multiplier = stakeMatch ? ({ k: 1000, m: 1000000, b: 1000000000 }[stakeMatch[2]] || 1) : 0;
+    const requestedStake = stakeMatch ? Number(stakeMatch[1]) * multiplier : NaN;
+    const stake = Number.isFinite(requestedStake) ? Math.floor(Math.max(10, Math.min(100000000000, requestedStake))) : 100;
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
     while (rooms.has(code)) code = makeCode();
