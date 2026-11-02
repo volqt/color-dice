@@ -220,7 +220,7 @@ io.on("connection", socket => {
   socket.on("room:colors", rawColors => {
     const p = requirePlayer(socket); if (!p) return;
     const room = p.room && rooms.get(p.room);
-    if (!room || !room.green || !room.red || room.result) return;
+    if (!room || !room.green || room.result) return;
     const allowed = ["red","orange","yellow","green","blue","purple"];
     const colors = Array.isArray(rawColors) ? [...new Set(rawColors.filter(c => allowed.includes(c)))].slice(0, 2) : [];
     if (room.green.id === socket.id) { room.green.colors = colors; room.green.ready = false; }
