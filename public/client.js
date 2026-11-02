@@ -34,6 +34,26 @@ $("name").addEventListener("change", () => socket.emit("player:name", $("name").
 $("create").addEventListener("click", () => { sendName(); socket.emit("room:create", Number($("stake").value)); });
 $("refresh").addEventListener("click", () => socket.emit("rooms:refresh"));
 $("ready").addEventListener("click", () => socket.emit("room:ready"));
+const colorNames = {red:"Red",orange:"Orange",yellow:"Yellow",green:"Green",blue:"Blue",purple:"Purple"};
+function renderColorPicker(room) {
+  const root = $("colorPicker"); if (!root) return;
+  root.innerHTML = "";
+  const mine = room.green === $("name").value ? (room.greenColors || []) : (room.redColors || []);
+  Object.keys(colorNames).forEach(color => {
+    const b = document.createElement("button"); b.type = "button";
+    b.className = "color-choice color-" + color + (mine.includes(color) ? " selected" : "");
+    b.textContent = colorNames[color];
+    b.addEventListener("click", () => {
+      const next = [...mine]; const idx = next.indexOf(color);
+      if (idx >= 0) next.splice(idx, 1);
+      else if (next.length < 2) next.push(color);
+      else { toast("Choose only 2 colors."); return; }
+      socket.emit("room:colors", next);
+    });
+    root.append(b);
+  });
+  $("colorHint").textContent = "Choose 2 colors (" + mine.length + "/2).";
+}
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
 function showMatch() { $("match").classList.remove("hidden"); }
 function hideMatch() { $("match").classList.add("hidden"); currentRoom = null; lastRoom = null; $("result").classList.add("hidden"); $("ready").disabled = true; $("ready").textContent = "I'm ready"; }
@@ -66,12 +86,15 @@ socket.on("room:update", room => {
   setAvatar("greenAvatar", room.greenUserId);
   setAvatar("redAvatar", room.redUserId);
   $("greenReady").textContent = room.green ? (room.greenReady ? "Ready ✓" : "Not ready") : "Open seat";
+  $("greenPicks").textContent = "Picks: " + ((room.greenColors || []).map(c => colorNames[c]).join(" + ") || "Choosing...");
+  $("redPicks").textContent = "Picks: " + ((room.redColors || []).map(c => colorNames[c]).join(" + ") || "Choosing...");
+  renderColorPicker(room);
   $("redReady").textContent = room.red ? (room.redReady ? "Ready ✓" : "Not ready") : "Open seat";
-  $("matchInfo").textContent = room.result ? "The duel is complete!" : ("Stake: " + room.stake + " gems each. Both players must be ready to roll.");
-  $("ready").disabled = !room.green || !room.red || !!room.result || ((room.green === $("name").value && room.greenReady) || (room.red === $("name").value && room.redReady));
+  $("matchInfo").textContent = room.result ? "The duel is complete!" : ("Stake: " + room.stake + " demo gems each. Pick 2 colors, then both players get ready.");
+  $("ready").disabled = !room.green || !room.red || !!room.result || ((room.green === $("name").value && (room.greenReady || (room.greenColors || []).length !== 2)) || (room.red === $("name").value && (room.redReady || (room.redColors || []).length !== 2)));
   if (room.result) {
     $("ready").disabled = true;
-    $("result").textContent = (room.result.winnerName || "Player") + " wins! " + room.result.roll + " · Prize: " + room.result.pot + " demo gems";
+    $("result").innerHTML = '<div class="dice-results">' + (room.result.dice || []).map(c => '<span class="die-face die-' + c + '">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + room.result.pot + ' demo gems</small>';
     $("result").classList.remove("hidden");
   } else { $("result").classList.add("hidden"); }
 });
