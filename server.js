@@ -242,10 +242,11 @@ io.on("connection", socket => {
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
     while (rooms.has(code)) code = makeCode();
-    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] }, red: null, result: null };
+    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] }, red: null, result: null, chatMessages: [] };
     rooms.set(code, room); p.room = code;
     socket.join(code);
     socket.emit("room:joined", code);
+    socket.emit("chat:history", { code, messages: room.chatMessages || [] });
     roomUpdate(room); sendRooms();
   });
   socket.on("room:join", rawCode => {
@@ -258,6 +259,7 @@ io.on("connection", socket => {
     room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] };
     p.room = code; socket.join(code);
     socket.emit("room:joined", code);
+    socket.emit("chat:history", { code, messages: room.chatMessages || [] });
     roomUpdate(room); sendRooms();
   });
   socket.on("room:colors", rawColors => {
@@ -293,6 +295,17 @@ io.on("connection", socket => {
     room[side].ready = true;
     if (room.green.ready && room.red.ready) resolveRound(room);
     roomUpdate(room);
+  });
+  socket.on("chat:send", rawText => {
+    const p = requirePlayer(socket); if (!p) return;
+    const room = p.room && rooms.get(p.room);
+    if (!room || !room.red || !room.green || ![room.green.id, room.red.id].includes(socket.id)) return;
+    const messageText = String(rawText || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 250);
+    if (!messageText) return;
+    const message = { code: room.code, username: p.name, text: messageText, time: Date.now() };
+    room.chatMessages = room.chatMessages || []; room.chatMessages.push(message);
+    if (room.chatMessages.length > 50) room.chatMessages.shift();
+    io.to(room.code).emit("chat:message", message);
   });
   socket.on("room:leave", () => { leaveRoom(socket); socket.emit("room:left"); });
   socket.on("rooms:refresh", sendRooms);
