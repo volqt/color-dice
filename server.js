@@ -13,7 +13,7 @@ const rooms = new Map();
 const players = new Map();
 const challenges = new Map();
 const startingGems = 1000;
-const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+const sessionSecret = process.env.SESSION_SECRET || "petroll-stable-session-secret-set-in-render-env";
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 const cookieName = "petroll_session";
 const SESSION_MS = 365 * 24 * 60 * 60 * 1000;
@@ -116,6 +116,9 @@ app.post("/api/roblox/verify", async (req, res) => {
   }
 });
 app.get("/api/me", (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   const session = sessionFromRequest(req);
   if (!session) return res.json({ authenticated: false });
   res.json({ authenticated: true, username: session.username, userId: session.id });
