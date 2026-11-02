@@ -1,5 +1,21 @@
 const $ = id => document.getElementById(id);
 const socket = io();
+const avatarCache = new Map();
+async function setAvatar(elementId, userId) {
+  const img = $(elementId);
+  if (!img) return;
+  if (!userId) { img.removeAttribute("src"); img.classList.add("avatar-empty"); return; }
+  img.classList.remove("avatar-empty");
+  if (avatarCache.has(String(userId))) { img.src = avatarCache.get(String(userId)); return; }
+  try {
+    const response = await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" + encodeURIComponent(userId) + "&size=150x150&format=Png&isCircular=true");
+    if (!response.ok) throw new Error("Avatar lookup failed");
+    const data = await response.json();
+    const imageUrl = data.data && data.data[0] && data.data[0].imageUrl;
+    if (imageUrl) { avatarCache.set(String(userId), imageUrl); img.src = imageUrl; }
+    else img.classList.add("avatar-empty");
+  } catch { img.classList.add("avatar-empty"); }
+}
 let currentRoom = null;
 let lastRoom = null;
 let toastTimer;
@@ -47,6 +63,8 @@ socket.on("room:update", room => {
   if (!currentRoom || room.code !== currentRoom) return;
   $("greenName").textContent = room.green || "Waiting for host…";
   $("redName").textContent = room.red || "Waiting for opponent…";
+  setAvatar("greenAvatar", room.greenUserId);
+  setAvatar("redAvatar", room.redUserId);
   $("greenReady").textContent = room.green ? (room.greenReady ? "Ready ✓" : "Not ready") : "Open seat";
   $("redReady").textContent = room.red ? (room.redReady ? "Ready ✓" : "Not ready") : "Open seat";
   $("matchInfo").textContent = room.result ? "The duel is complete!" : ("Stake: " + room.stake + " gems each. Both players must be ready to roll.");
