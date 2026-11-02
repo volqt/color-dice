@@ -80,6 +80,8 @@ auth$("logout").addEventListener("click", async () => {
       auth$("robloxUsername").textContent = "@" + me.username;
       auth$("robloxAccount").classList.remove("hidden");
       auth$("logout").classList.remove("hidden");
+      window.petrollUserId = String(me.userId || "");
+      window.petrollUsername = me.username;
       auth$("name").value = me.username;
       auth$("name").readOnly = true;
       auth$("name").setAttribute("aria-label", "Verified Roblox username");
