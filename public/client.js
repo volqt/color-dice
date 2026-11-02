@@ -25,7 +25,7 @@ socket.on("balance", gems => { $("balance").textContent = Number(gems).toLocaleS
 socket.on("error:message", message => toast(message));
 socket.on("room:joined", code => {
   currentRoom = code; lastRoom = code; $("roomBadge").textContent = "MATCH READY";
-  $("created").textContent = "Match created! You’re waiting for an opponent to join from Open rooms.";
+  $("created").textContent = "You’re in the match! Wait for the other player to join or get ready.";
   $("created").classList.remove("hidden"); showMatch();
 });
 socket.on("room:left", () => { hideMatch(); toast("You left the room."); });
