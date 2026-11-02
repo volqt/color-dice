@@ -184,30 +184,36 @@ function leaveRoom(socket) {
 }
 function resolveRound(room) {
   if (!room || !room.green || !room.red || room.result || room.green.colors.length !== 2 || room.red.colors.length !== 2) return;
-        const colors = ["red","orange","yellow","green","blue","purple"];
-        const dice = Array.from({length: 4}, () => colors[Math.floor(Math.random() * colors.length)]);
-        const scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
-        const scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
-        const winnerSide = scoreGreen === scoreRed ? "tie" : scoreGreen > scoreRed ? "green" : "red";
-        if (winnerSide === "tie") {
-          room.result = { winner: "tie", winnerName: null, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: "It's a tie! Both stakes are returned." };
-        } else {
-          const winner = room[winnerSide];
-          const loser = room[winnerSide === "green" ? "red" : "green"];
-          winner.gems += room.stake;
-          loser.gems -= room.stake;
-          const winnerPlayer = players.get(winner.id);
-          const loserPlayer = players.get(loser.id);
-          if (winnerPlayer) winnerPlayer.gems = winner.gems;
-          if (loserPlayer) loserPlayer.gems = loser.gems;
-          balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
-          balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
-          room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
-          if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
-          if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
-        }
-  
+  const colors = ["red", "orange", "yellow", "green", "blue", "purple"];
+  let dice, scoreGreen, scoreRed;
+  // Reroll ties until one side wins. Cap retries as a safety guard.
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    dice = Array.from({ length: 4 }, () => colors[Math.floor(Math.random() * colors.length)]);
+    scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
+    scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
+    if (scoreGreen !== scoreRed) break;
+  }
+  if (scoreGreen === scoreRed) {
+    // Extremely unlikely fallback: continue the loop with a deterministic non-tie result.
+    scoreGreen = 1;
+    scoreRed = 0;
+  }
+  const winnerSide = scoreGreen > scoreRed ? "green" : "red";
+  const winner = room[winnerSide];
+  const loser = room[winnerSide === "green" ? "red" : "green"];
+  winner.gems += room.stake;
+  loser.gems -= room.stake;
+  const winnerPlayer = players.get(winner.id);
+  const loserPlayer = players.get(loser.id);
+  if (winnerPlayer) winnerPlayer.gems = winner.gems;
+  if (loserPlayer) loserPlayer.gems = loser.gems;
+  balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
+  balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
+  room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
+  if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
+  if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
 }
+
 
 io.on("connection", socket => {
   const session = sessionFromSocket(socket);
