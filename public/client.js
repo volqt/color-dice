@@ -4,7 +4,7 @@ const avatarCache = new Map();
 async function setAvatar(elementId, userId) {
   const img = $(elementId);
   if (!img) return;
-  if (!userId) { img.removeAttribute("src"); img.classList.add("avatar-empty"); return; }
+  if (!userId) { img.src = "/avatar-placeholder.svg"; img.classList.add("avatar-empty"); return; }
   img.classList.remove("avatar-empty");
   if (avatarCache.has(String(userId))) { img.src = avatarCache.get(String(userId)); return; }
   try {
@@ -13,8 +13,8 @@ async function setAvatar(elementId, userId) {
     const data = await response.json();
     const imageUrl = data.data && data.data[0] && data.data[0].imageUrl;
     if (imageUrl) { avatarCache.set(String(userId), imageUrl); img.src = imageUrl; }
-    else img.classList.add("avatar-empty");
-  } catch { img.classList.add("avatar-empty"); }
+    else { img.src = "/avatar-placeholder.svg"; img.classList.add("avatar-empty"); }
+  } catch { img.src = "/avatar-placeholder.svg"; img.classList.add("avatar-empty"); }
 }
 let currentRoom = null;
 let lastRoom = null;
@@ -38,9 +38,13 @@ const colorNames = {red:"Red",orange:"Orange",yellow:"Yellow",green:"Green",blue
 function renderColorPicker(room) {
   const root = $("colorPicker"); if (!root) return;
   root.innerHTML = "";
-  const mine = room.green === $("name").value ? (room.greenColors || []) : (room.redColors || []);
+  const myId = String(window.petrollUserId || "");
+  const isGreen = myId && String(room.greenUserId || "") === myId;
+  const isRed = myId && String(room.redUserId || "") === myId;
+  const isMineGreen = isGreen || (!myId && String(room.green || "").toLowerCase() === String($("name").value).trim().toLowerCase());
+  const mine = isMineGreen ? (room.greenColors || []) : (room.redColors || []);
   Object.keys(colorNames).forEach(color => {
-    const b = document.createElement("button"); b.type = "button";
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(mine.includes(color)));
     b.className = "color-choice color-" + color + (mine.includes(color) ? " selected" : "");
     b.textContent = colorNames[color];
     b.addEventListener("click", () => {
