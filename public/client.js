@@ -43,19 +43,27 @@ function renderColorPicker(room) {
   const isRed = myId && String(room.redUserId || "") === myId;
   const isMineGreen = isGreen || (!myId && String(room.green || "").toLowerCase() === String($("name").value).trim().toLowerCase());
   const mine = isMineGreen ? (room.greenColors || []) : (room.redColors || []);
+  const theirs = isMineGreen ? (room.redColors || []) : (room.greenColors || []);
   Object.keys(colorNames).forEach(color => {
-    const count = mine.filter(pick => pick === color).length;
-    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(count > 0));
-    b.className = "color-choice color-" + color + (count ? " selected" : "");
-    b.textContent = colorNames[color] + (count > 1 ? " ×" + count : count === 1 ? " ✓" : "");
+    const selected = mine.includes(color);
+    const takenByOpponent = theirs.includes(color);
+    const b = document.createElement("button"); b.type = "button";
+    b.setAttribute("aria-pressed", String(selected));
+    b.disabled = takenByOpponent && !selected;
+    b.className = "color-choice color-" + color + (selected ? " selected" : "") + (takenByOpponent && !selected ? " unavailable" : "");
+    b.textContent = colorNames[color] + (selected ? " ✓" : takenByOpponent ? " Taken" : "");
+    b.title = takenByOpponent && !selected ? "Your opponent picked this color" : colorNames[color];
     b.addEventListener("click", () => {
-      const next = mine.length >= 2 ? [] : [...mine];
-      next.push(color);
+      let next = [...mine];
+      const idx = next.indexOf(color);
+      if (idx >= 0) next.splice(idx, 1);
+      else if (next.length < 2) next.push(color);
+      else { toast("Choose only 2 different colors."); return; }
       socket.emit("room:colors", next);
     });
     root.append(b);
   });
-  $("colorHint").textContent = "Choose 2 colors (" + mine.length + "/2).";
+  $("colorHint").textContent = "Choose 2 different colors (" + mine.length + "/2). Colors picked by your opponent are unavailable.";
 }
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
 function showMatch() { $("match").classList.remove("hidden"); }
