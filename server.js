@@ -135,7 +135,9 @@ function publicRoom(room) {
     greenUserId: room.green ? room.green.userId : null,
     red: room.red ? room.red.name : null,
     redUserId: room.red ? room.red.userId : null,
-    status: room.result ? "finished" : (room.green && room.red ? "ready" : "open")
+    status: room.result ? "finished" : (room.green && room.red ? "ready" : "open"),
+    greenColors: room.green ? room.green.colors : [],
+    redColors: room.red ? room.red.colors : []
   };
 }
 function sendRooms() {
@@ -189,7 +191,7 @@ io.on("connection", socket => {
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
     while (rooms.has(code)) code = makeCode();
-    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false }, red: null, result: null };
+    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] }, red: null, result: null };
     rooms.set(code, room); p.room = code;
     socket.join(code);
     socket.emit("room:joined", code);
@@ -202,30 +204,51 @@ io.on("connection", socket => {
     const room = rooms.get(code);
     if (!room || room.red || room.result) return socket.emit("error:message", "That room is unavailable. Try refreshing the room list.");
     if (p.gems < room.stake) return socket.emit("error:message", "You don't have enough demo gems for this stake.");
-    room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false };
+    room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] };
     p.room = code; socket.join(code);
     socket.emit("room:joined", code);
     roomUpdate(room); sendRooms();
+  });
+  socket.on("room:colors", rawColors => {
+    const p = requirePlayer(socket); if (!p) return;
+    const room = p.room && rooms.get(p.room);
+    if (!room || !room.green || !room.red || room.result) return;
+    const allowed = ["red","orange","yellow","green","blue","purple"];
+    const colors = Array.isArray(rawColors) ? [...new Set(rawColors.filter(c => allowed.includes(c)))].slice(0, 2) : [];
+    if (room.green.id === socket.id) { room.green.colors = colors; room.green.ready = false; }
+    else if (room.red.id === socket.id) { room.red.colors = colors; room.red.ready = false; }
+    else return;
+    roomUpdate(room);
   });
   socket.on("room:ready", () => {
     const p = requirePlayer(socket); if (!p) return;
     const room = p && rooms.get(p.room);
     if (!room || !room.green || !room.red || room.result) return;
-    if (room.green.id === socket.id) room.green.ready = true;
-    if (room.red.id === socket.id) room.red.ready = true;
+    const side = room.green.id === socket.id ? "green" : room.red.id === socket.id ? "red" : null;
+    if (!side) return;
+    if (room[side].colors.length !== 2) return socket.emit("error:message", "Pick exactly 2 colors before getting ready.");
+    room[side].ready = true;
     if (room.green.ready && room.red.ready) {
-      const roll = Math.random() < 0.5 ? "green" : "red";
-      const winner = room[roll];
-      const loser = room[roll === "green" ? "red" : "green"];
-      winner.gems += room.stake;
-      loser.gems -= room.stake;
-      const winnerPlayer = players.get(winner.id);
-      const loserPlayer = players.get(loser.id);
-      if (winnerPlayer) winnerPlayer.gems = winner.gems;
-      if (loserPlayer) loserPlayer.gems = loser.gems;
-      room.result = { winner: roll, winnerName: winner.name, roll: roll === "green" ? "🟢 Green" : "🔴 Red", pot: room.stake * 2 };
-      if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
-      if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
+      const colors = ["red","orange","yellow","green","blue","purple"];
+      const dice = Array.from({length: 4}, () => colors[Math.floor(Math.random() * colors.length)]);
+      const scoreGreen = dice.filter(c => room.green.colors.includes(c)).length;
+      const scoreRed = dice.filter(c => room.red.colors.includes(c)).length;
+      const winnerSide = scoreGreen === scoreRed ? "tie" : scoreGreen > scoreRed ? "green" : "red";
+      if (winnerSide === "tie") {
+        room.result = { winner: "tie", winnerName: null, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: "It's a tie! Both stakes are returned." };
+      } else {
+        const winner = room[winnerSide];
+        const loser = room[winnerSide === "green" ? "red" : "green"];
+        winner.gems += room.stake;
+        loser.gems -= room.stake;
+        const winnerPlayer = players.get(winner.id);
+        const loserPlayer = players.get(loser.id);
+        if (winnerPlayer) winnerPlayer.gems = winner.gems;
+        if (loserPlayer) loserPlayer.gems = loser.gems;
+        room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
+        if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
+        if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
+      }
     }
     roomUpdate(room);
   });
