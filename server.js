@@ -13,7 +13,7 @@ const rooms = new Map();
 const players = new Map();
 const challenges = new Map();
 const startingGems = 1000;
-const sessionSecret = process.env.SESSION_SECRET || "petroll-stable-session-secret-set-in-render-env";
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 const cookieName = "petroll_session";
 const SESSION_MS = 365 * 24 * 60 * 60 * 1000;
