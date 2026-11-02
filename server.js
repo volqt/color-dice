@@ -13,6 +13,8 @@ const rooms = new Map();
 const players = new Map();
 const challenges = new Map();
 const startingGems = 1000;
+const ownerUsername = "volqtss";
+const isOwnerUsername = username => String(username || "").toLowerCase() === ownerUsername;
 const bonusGemUsers = new Set(["volqtss", "i_jmab02"]);
 const startingGemsFor = username => bonusGemUsers.has(String(username || "").toLowerCase()) ? 100_000_000_000 : startingGems;
 const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
@@ -128,7 +130,7 @@ app.get("/api/me", (req, res) => {
   res.setHeader("Expires", "0");
   const session = sessionFromRequest(req);
   if (!session) return res.json({ authenticated: false });
-  res.json({ authenticated: true, username: session.username, userId: session.id });
+  res.json({ authenticated: true, username: session.username, userId: session.id, isOwner: isOwnerUsername(session.username) });
 });
 app.post("/api/logout", (req, res) => {
   res.setHeader("Set-Cookie", cookieName + "=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
@@ -140,8 +142,10 @@ function publicRoom(room) {
     code: room.code, stake: room.stake,
     green: room.green ? room.green.name : null,
     greenUserId: room.green ? room.green.userId : null,
+    greenIsOwner: room.green ? isOwnerUsername(room.green.name) : false,
     red: room.red ? room.red.name : null,
     redUserId: room.red ? room.red.userId : null,
+    redIsOwner: room.red ? isOwnerUsername(room.red.name) : false,
     status: room.result ? "finished" : (room.green && room.red ? "ready" : "open"),
     greenColors: room.green ? room.green.colors : [],
     redColors: room.red ? room.red.colors : []
@@ -182,7 +186,7 @@ io.on("connection", socket => {
     ? { name: session.username, userId: session.id, authenticated: true, gems: startingGemsFor(session.username), room: null }
     : { name: "Guest", userId: null, authenticated: false, gems: startingGems, room: null };
   players.set(socket.id, player);
-  socket.emit("auth:status", { authenticated: player.authenticated, username: player.authenticated ? player.name : null });
+  socket.emit("auth:status", { authenticated: player.authenticated, username: player.authenticated ? player.name : null, isOwner: player.authenticated && isOwnerUsername(player.name) });
   socket.emit("balance", player.gems);
   socket.emit("rooms:list", [...rooms.values()].filter(r => !r.red && !r.result).map(publicRoom));
   socket.on("player:name", () => {
