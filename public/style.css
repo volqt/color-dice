@@ -238,3 +238,6 @@ body{background:radial-gradient(ellipse at 50% -30%,#1a2b4b 0%,transparent 55%),
 #result>small{display:block;color:#91a2c0;margin-top:5px}
 @keyframes diePop{from{opacity:0;transform:translateY(12px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:650px){.hero{background:radial-gradient(ellipse at 80% 70%,#2870ff30,transparent 48%),linear-gradient(110deg,#151e32,#111725)}.die-face{width:54px;height:54px;border-radius:13px}.die-face:after{width:14px;height:14px}}
+
+/* No manual ready-up needed; selecting two colors readies the player automatically. */
+#match #ready{display:none!important}
