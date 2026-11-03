@@ -403,7 +403,10 @@ io.on("connection", socket => {
   socket.on("room:coinflip-choice", rawChoice => {
     const p = requirePlayer(socket); if (!p) return;
     const room = p.room && rooms.get(p.room);
-    if (!room || room.mode !== "coinflip" || !room.green || !room.red || room.result) return;
+    if (!room) return socket.emit("error:message", "Join a coinflip match first.");
+    if (room.mode !== "coinflip") return socket.emit("error:message", "This is a Color Dice match. Create or join a Coinflip match to pick heads or tails.");
+    if (!room.green || !room.red) return socket.emit("error:message", "Waiting for another player to join before you can pick.");
+    if (room.result) return socket.emit("error:message", "This match has finished. Create another match to play again.");
     const choice = String(rawChoice || "").toLowerCase();
     if (!["heads", "tails"].includes(choice)) return;
     const side = room.green.id === socket.id ? "green" : room.red.id === socket.id ? "red" : null;
