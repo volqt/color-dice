@@ -298,3 +298,58 @@ body{background:radial-gradient(ellipse at 50% -30%,#1a2b4b 0%,transparent 55%),
 #match .coin-choice{min-height:74px;font-size:18px;letter-spacing:.1em}
 #match .coin-choice.selected{border-color:#f5cf61;background:linear-gradient(145deg,#4b3a1b,#252033);box-shadow:inset 0 0 0 1px #f5cf61,0 0 18px #f5cf6125}
 @media(max-width:420px){.coin-result .coin-face{width:116px;height:116px;min-width:116px;min-height:116px;font-size:19px}.coin-result{min-height:128px}}
+
+
+/* Christmas season: clean evergreen, cranberry and warm-gold accents with gentle snowfall */
+:root{--bg:#08130f;--panel:#101e19;--line:#294238;--text:#f5fbf6;--muted:#a1b7aa;--purple:#e4bd62;--green:#59d99a;--red:#e66a78}
+html{scroll-behavior:smooth}
+body{position:relative;isolation:isolate;background:radial-gradient(ellipse at 15% 0%,#176b4528,transparent 38%),radial-gradient(ellipse at 90% 15%,#9b27321a,transparent 35%),#08130f}
+body:before,body:after{content:"";position:fixed;inset:-120% 0 0;z-index:-1;pointer-events:none;background-repeat:repeat;background-size:180px 180px;opacity:.26;animation:christmasSnow 24s linear infinite}
+body:before{background-image:radial-gradient(2px 2px at 20px 30px,#fff 98%,transparent),radial-gradient(2px 2px at 90px 120px,#d9f7e5 98%,transparent),radial-gradient(1.5px 1.5px at 145px 65px,#fff 98%,transparent);background-size:180px 180px}
+body:after{background-image:radial-gradient(2px 2px at 60px 75px,#fff 98%,transparent),radial-gradient(1px 1px at 130px 145px,#f5d889 98%,transparent);background-size:240px 240px;opacity:.18;animation-duration:34s;animation-direction:reverse}
+@keyframes christmasSnow{to{transform:translateY(100%)}}
+.sidebar{background:rgba(8,23,17,.96);border-right-color:#244536}
+.logo,.authlogo{background:linear-gradient(145deg,#e2bd62,#b9872b);color:#201b0c;box-shadow:0 8px 25px #d6b45a22}
+.accent,.hero h1 span,.authcard h1 span{color:#78dda0}
+.nav.active,.nav:hover{background:#173b2a;box-shadow:inset 3px 0 #67d995;border-color:#285b40}
+.top{background:rgba(7,19,14,.92);border-bottom-color:#284637;backdrop-filter:blur(14px)}
+.balance{background:#172d22;border-color:#386345}
+.balance small{color:#d9bb6c}
+.banner{background:linear-gradient(100deg,#143c29,#202b20);border-color:#315b3d;color:#d9eee0}
+.banner a{color:#e7c86c}
+.hero{background:radial-gradient(ellipse at 78% 45%,#d4b25416,transparent 42%),linear-gradient(115deg,#142b20,#101c17 80%);border-color:#315640}
+.hero h1 span{color:#e3c36b}
+.button{background:linear-gradient(115deg,#65d998,#319b65);color:#071c10;box-shadow:0 7px 22px #40b97826}
+.button:hover{filter:brightness(1.08);box-shadow:0 12px 28px #40b97838}
+.small{background:#1c3a2b;color:#d8f4df}
+.ghost{background:#111f18;border-color:#35513e;color:#d2e2d5}
+.card,.panel{background:linear-gradient(145deg,rgba(18,35,26,.96),rgba(12,25,19,.96));border-color:#2a4835;box-shadow:0 12px 30px #0002}
+.card[href]:hover{border-color:#6bc88b;transform:translateY(-2px)}
+.cardart{background:radial-gradient(ellipse at center,#2e9a5c25,transparent 70%),#162c20}
+.cardart.gold{background:radial-gradient(ellipse at center,#d9b55230,transparent 70%),#25251a}
+.pill{background:#163b27;color:#8de7aa;border-color:#326344}
+.cardbody>b{color:#e5c66f;border-top-color:#2b4936}
+.inputrow input,.create select{background:#0a1811;border-color:#2d4b37;color:#f5fbf6}
+.inputrow input:focus,.create select:focus{border-color:#67d995;box-shadow:0 0 0 3px #67d9951c}
+.room{background:linear-gradient(100deg,#0d1d14,#15291d);border-color:#294735}
+.room:hover{border-color:#5ebd80}
+.room button{background:#1b3b28;border-color:#386849;color:#e0f6e4}
+.guideicon{background:#1c3b28}
+.notice{background:#162e20;border-color:#315c3b;color:#d0e9d5}
+#match .modal{background:linear-gradient(150deg,#14271d,#0b1710);border-color:#355740;box-shadow:0 30px 100px #000b}
+#match .player{background:linear-gradient(145deg,#162c20,#0c1a12);border-color:#2b4a35}
+#match .pick-panel{background:#0e1d14;border-color:#2c4a35}
+#match .coinflip-choices{position:relative;z-index:5}
+#match .coin-choice{position:relative;z-index:6;pointer-events:auto;touch-action:manipulation;user-select:none;background:linear-gradient(145deg,#1a3b28,#11271a);border-color:#3a6847;color:#f4fbf4;cursor:pointer}
+#match .coin-choice:hover:not(:disabled){border-color:#e2c267;transform:translateY(-2px);box-shadow:0 8px 22px #0003}
+#match .coin-choice.selected{border-color:#e4c56e;background:linear-gradient(145deg,#3b3a21,#1c3021);box-shadow:inset 0 0 0 1px #e4c56e,0 0 20px #e4c56e20;color:#ffedb0}
+#match .coin-choice:disabled{opacity:.5;cursor:not-allowed}
+#match .result{background:linear-gradient(100deg,#173d28,#1d3020);border-color:#52885b;color:#edffef}
+#match .coin-result .coin-face{border-color:#e7ca72;background:radial-gradient(circle at 32% 25%,#fff1ad 0%,#f1d36e 24%,#d29b2d 65%,#875a16 100%);box-shadow:0 10px 0 #6f460e,0 17px 28px #0008,inset 0 0 0 3px #fff0a6}
+#match .chat-messages{background:#08150e;border-color:#284735}
+#match .chat-message{background:#142c1e;border-color:#2b4c36}
+#match .chat-message.mine{background:#1a3d2b;border-color:#39734b}
+.deposit-panel{background:linear-gradient(140deg,#142a1d,#0d1b13);border-color:#2d4c35}
+.deposit-form,.deposit-inventory{background:#0b1a11;border-color:#294735}
+.deposit-form input,.deposit-form select{background:#102319;border-color:#2c4b36}
+@media(prefers-reduced-motion:reduce){body:before,body:after{animation:none!important}html{scroll-behavior:auto}.card[href]:hover{transform:none}}
