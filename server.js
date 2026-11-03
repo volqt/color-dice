@@ -242,6 +242,7 @@ function roomUpdate(room) {
     mode: room.mode || "dice",
     greenChoice: room.green ? (room.green.choice || null) : null,
     redChoice: room.red ? (room.red.choice || null) : null,
+    targetWins: room.targetWins || 1, greenWins: room.greenWins || 0, redWins: room.redWins || 0, roundNumber: room.roundNumber || 0, lastRound: room.lastRound || null,
     result: room.result,
     balances: {
       green: room.green ? room.green.gems : null,
@@ -345,7 +346,8 @@ io.on("connection", socket => {
     const p = requirePlayer(socket); if (!p) return;
     leaveRoom(socket);
     const options = rawOptions && typeof rawOptions === "object" ? rawOptions : { stake: rawOptions, mode: "dice" };
-    const mode = options.mode === "coinflip" ? "coinflip" : "dice";\n    const targetWins = mode === "coinflip" ? Math.max(1, Math.min(3, Math.floor(Number(options.targetWins) || 1))) : 1;
+    const mode = options.mode === "coinflip" ? "coinflip" : "dice";
+    const targetWins = mode === "coinflip" ? Math.max(1, Math.min(3, Math.floor(Number(options.targetWins) || 1))) : 1;
     const stakeText = String(options.stake ?? "100").trim().toLowerCase().replace(/[,_\s]/g, "");
     const stakeMatch = stakeText.match(/^([0-9]+(?:\.[0-9]+)?)([kmb])?$/);
     const multiplier = stakeMatch ? ({ k: 1000, m: 1000000, b: 1000000000 }[stakeMatch[2]] || 1) : 0;
