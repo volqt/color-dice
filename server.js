@@ -219,7 +219,7 @@ app.post("/api/logout", (req, res) => {
 
 function publicRoom(room) {
   return {
-    code: room.code, stake: room.stake,
+    code: room.code, stake: room.stake, mode: room.mode || "dice",
     green: room.green ? room.green.name : null,
     greenUserId: room.green ? room.green.userId : null,
     greenIsOwner: room.green ? isOwnerUsername(room.green.name) : false,
@@ -228,7 +228,7 @@ function publicRoom(room) {
     redIsOwner: room.red ? isOwnerUsername(room.red.name) : false,
     status: room.result ? "finished" : (room.green && room.red ? "ready" : "open"),
     greenColors: room.green ? room.green.colors : [],
-    redColors: room.red ? room.red.colors : []
+    redColors: room.red ? room.red.colors : [], greenChoice: room.green ? (room.green.choice || null) : null, redChoice: room.red ? (room.red.choice || null) : null
   };
 }
 function sendRooms() {
@@ -239,6 +239,9 @@ function roomUpdate(room) {
     ...publicRoom(room),
     greenReady: !!(room.green && room.green.ready),
     redReady: !!(room.red && room.red.ready),
+    mode: room.mode || "dice",
+    greenChoice: room.green ? (room.green.choice || null) : null,
+    redChoice: room.red ? (room.red.choice || null) : null,
     result: room.result,
     balances: {
       green: room.green ? room.green.gems : null,
@@ -259,6 +262,24 @@ function leaveRoom(socket) {
   }
   p.room = null;
   sendRooms();
+}
+function resolveCoinflip(room) {
+  if (!room || room.mode !== "coinflip" || !room.green || !room.red || room.result || !room.green.choice || !room.red.choice) return;
+  const flip = Math.random() < 0.5 ? "heads" : "tails";
+  const winnerSide = room.green.choice === flip ? "green" : "red";
+  const winner = room[winnerSide];
+  const loser = room[winnerSide === "green" ? "red" : "green"];
+  const tax = Math.floor(room.stake * 0.10);
+  const winnerPayout = room.stake - tax;
+  winner.gems += winnerPayout; loser.gems -= room.stake;
+  const winnerPlayer = players.get(winner.id), loserPlayer = players.get(loser.id);
+  if (winnerPlayer) winnerPlayer.gems = winner.gems;
+  if (loserPlayer) loserPlayer.gems = loser.gems;
+  balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
+  balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
+  room.result = { mode: "coinflip", winner: winnerSide, winnerName: winner.name, flip, greenChoice: room.green.choice, redChoice: room.red.choice, stake: room.stake, pot: winnerPayout, tax, message: "The coin landed " + flip.toUpperCase() + "! " + winner.name + " wins and receives " + winnerPayout.toLocaleString("en-US") + " demo gems after 10% tax." };
+  if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
+  if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
 }
 function resolveRound(room) {
   if (!room || !room.green || !room.red || room.result || room.green.colors.length !== 2 || room.red.colors.length !== 2) return;
@@ -311,10 +332,12 @@ io.on("connection", socket => {
     const p = players.get(socket.id);
     socket.emit("player:name", p.name);
   });
-  socket.on("room:create", stakeValue => {
+  socket.on("room:create", rawOptions => {
     const p = requirePlayer(socket); if (!p) return;
     leaveRoom(socket);
-    const stakeText = String(stakeValue ?? "100").trim().toLowerCase().replace(/[,_\s]/g, "");
+    const options = rawOptions && typeof rawOptions === "object" ? rawOptions : { stake: rawOptions, mode: "dice" };
+    const mode = options.mode === "coinflip" ? "coinflip" : "dice";
+    const stakeText = String(options.stake ?? "100").trim().toLowerCase().replace(/[,_\s]/g, "");
     const stakeMatch = stakeText.match(/^([0-9]+(?:\.[0-9]+)?)([kmb])?$/);
     const multiplier = stakeMatch ? ({ k: 1000, m: 1000000, b: 1000000000 }[stakeMatch[2]] || 1) : 0;
     const requestedStake = stakeMatch ? Number(stakeMatch[1]) * multiplier : NaN;
@@ -322,7 +345,7 @@ io.on("connection", socket => {
     if (p.gems < stake) return socket.emit("error:message", "Not enough demo gems for that stake.");
     let code = makeCode();
     while (rooms.has(code)) code = makeCode();
-    const room = { code, stake, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] }, red: null, result: null, chatMessages: [] };
+    const room = { code, stake, mode, green: { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [], choice: null }, red: null, result: null, chatMessages: [] };
     rooms.set(code, room); p.room = code;
     socket.join(code);
     socket.emit("room:joined", code);
@@ -336,7 +359,7 @@ io.on("connection", socket => {
     const room = rooms.get(code);
     if (!room || room.red || room.result) return socket.emit("error:message", "That room is unavailable. Try refreshing the room list.");
     if (p.gems < room.stake) return socket.emit("error:message", "You don't have enough demo gems for this stake.");
-    room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [] };
+    room.red = { id: socket.id, userId: p.userId, name: p.name, gems: p.gems, ready: false, colors: [], choice: null };
     p.room = code; socket.join(code);
     socket.emit("room:joined", code);
     socket.emit("chat:history", { code, messages: room.chatMessages || [] });
@@ -345,7 +368,7 @@ io.on("connection", socket => {
   socket.on("room:colors", rawColors => {
     const p = requirePlayer(socket); if (!p) return;
     const room = p.room && rooms.get(p.room);
-    if (!room || !room.green || room.result) return;
+    if (!room || !room.green || room.result || room.mode === "coinflip") return;
     const allowed = ["red","orange","yellow","green","blue","purple"];
     const colors = Array.isArray(rawColors) ? [...new Set(rawColors.filter(c => allowed.includes(c)))].slice(0, 2) : [];
     const isGreenPlayer = room.green.id === socket.id;
@@ -363,6 +386,20 @@ io.on("connection", socket => {
       room.red.ready = true;
       resolveRound(room);
     }
+    roomUpdate(room);
+  });
+  socket.on("room:coinflip-choice", rawChoice => {
+    const p = requirePlayer(socket); if (!p) return;
+    const room = p.room && rooms.get(p.room);
+    if (!room || room.mode !== "coinflip" || !room.green || !room.red || room.result) return;
+    const choice = String(rawChoice || "").toLowerCase();
+    if (!["heads", "tails"].includes(choice)) return;
+    const side = room.green.id === socket.id ? "green" : room.red.id === socket.id ? "red" : null;
+    if (!side) return;
+    const opponentSide = side === "green" ? "red" : "green";
+    if (room[opponentSide].choice === choice) return socket.emit("error:message", "Your opponent chose " + choice + ". Pick the other side.");
+    room[side].choice = choice; room[side].ready = true;
+    if (room.green.choice && room.red.choice) resolveCoinflip(room);
     roomUpdate(room);
   });
   socket.on("room:ready", () => {
