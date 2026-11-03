@@ -74,7 +74,7 @@ function renderColorPicker(room) {
   $("colorHint").textContent = "Choose 2 different colors (" + mine.length + "/2). Colors picked by your opponent are unavailable.";
 }
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
-document.querySelectorAll(".coin-choice").forEach(button => button.addEventListener("click", () => socket.emit("room:coinflip-choice", button.dataset.choice)));
+document.querySelectorAll(".coin-choice").forEach(button => button.addEventListener("click", () => { if (!currentRoom) { toast("Join a coinflip room first."); return; } if (!socket.connected) { toast("Reconnecting — try again in a moment."); return; } socket.emit("room:coinflip-choice", button.dataset.choice); }));
 $("coinflipCard").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
 $("coinflipNav").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
 function addChatMessage(message) {
@@ -138,7 +138,7 @@ socket.on("room:update", room => {
   $("colorPickPanel").classList.toggle("hidden", coinflip);
   $("coinflipPickPanel").classList.toggle("hidden", !coinflip);
   $("coinflipHint").textContent = !room.red ? "Waiting for an opponent to join." : ("First to " + (room.targetWins || 1) + " · Score " + (room.greenWins || 0) + "-" + (room.redWins || 0) + ". " + (room.lastRound && !room.result ? "Round " + room.lastRound.roundNumber + " complete — pick again! " : "") + "Your pick: " + (myCoinflipChoice(room) || "not chosen") + ". Choose opposite sides.");
-  document.querySelectorAll(".coin-choice").forEach(button => { const mine = myCoinflipChoice(room); button.classList.toggle("selected", mine === button.dataset.choice); button.disabled = !room.red || !!room.result || (isMyGreen(room) ? room.redChoice : room.greenChoice) === button.dataset.choice; });
+  document.querySelectorAll(".coin-choice").forEach(button => { const mine = myCoinflipChoice(room); const opponentChoice = isMyGreen(room) ? room.redChoice : room.greenChoice; button.classList.toggle("selected", mine === button.dataset.choice); button.disabled = !room.red || !!room.result; button.setAttribute("aria-pressed", String(mine === button.dataset.choice)); button.title = !room.red ? "Waiting for an opponent" : (room.result ? "This match has finished" : (opponentChoice === button.dataset.choice ? "Your opponent picked this side; choose the other side" : "Choose " + button.dataset.choice)); });
   renderColorPicker(room);
   $("redReady").textContent = room.red ? (room.redReady ? "Ready ✓" : "Not ready") : "Open seat";
   $("roomBadge").textContent = coinflip ? "COINFLIP" : "COLOR DICE";
