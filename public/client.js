@@ -163,7 +163,7 @@ async function loadDeposits() {
       row.append(title, detail); requestsRoot.append(row);
     });
     const admin = $("depositAdmin");
-    if (data.pending && data.pending.length) {
+    if ((data.pending && data.pending.length) || (data.pendingWithdrawals && data.pendingWithdrawals.length)) {
       admin.classList.remove("hidden");
       const queue = $("depositQueue"); queue.replaceChildren();
       data.pending.forEach(item => {
