@@ -15,7 +15,9 @@ const balancesByUsername = new Map();
 const challenges = new Map();
 const depositRequests = new Map();
 const depositedAssets = new Map();
+const withdrawalRequests = new Map();
 let nextDepositId = 1;
+let nextWithdrawalId = 1;
 const startingGems = 1000;
 const ownerUsername = "volqtss";
 const isOwnerUsername = username => String(username || "").toLowerCase() === ownerUsername;
@@ -142,9 +144,9 @@ app.get("/api/deposits", (req, res) => {
   if (!session) return res.status(401).json({ error: "Verify your Roblox account first." });
   const username = String(session.username).toLowerCase();
   const assets = depositedAssets.get(username) || [];
-  const requests = [...depositRequests.values()].filter(d => d.username.toLowerCase() === username);
+  const requests = [...depositRequests.values()].filter(d => d.username.toLowerCase() === username);\n  const withdrawals = [...withdrawalRequests.values()].filter(d => d.username.toLowerCase() === username);
   const isOwner = isOwnerUsername(session.username);
-  res.json({ assets, requests, pending: isOwner ? [...depositRequests.values()].filter(d => d.status === "pending") : [] });
+  res.json({ assets, requests, withdrawals, pending: isOwner ? [...depositRequests.values()].filter(d => d.status === "pending") : [], pendingWithdrawals: isOwner ? [...withdrawalRequests.values()].filter(d => d.status === "pending") : [], tradeDetection: process.env.PS99_PUBLIC_TRADES_URL ? "configured" : "setup_required" });
 });
 app.post("/api/deposits/request", (req, res) => {
   const session = sessionFromRequest(req);
@@ -158,6 +160,34 @@ app.post("/api/deposits/request", (req, res) => {
   const request = { id: String(nextDepositId++), username, type, itemName, details, status: "pending", createdAt: Date.now() };
   depositRequests.set(request.id, request);
   res.json({ ok: true, request });
+});
+app.post("/api/withdrawals/request", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session) return res.status(401).json({ error: "Verify your Roblox account first." });
+  const itemName = String(req.body?.itemName || "").trim().slice(0, 100);
+  const details = String(req.body?.details || "").trim().slice(0, 250);
+  if (!itemName) return res.status(400).json({ error: "Enter the exact pet name or PS99 gem amount." });
+  const request = { id: String(nextWithdrawalId++), username: session.username, itemName, details, status: "pending", createdAt: Date.now() };
+  withdrawalRequests.set(request.id, request);
+  res.json({ ok: true, request });
+});
+app.post("/api/withdrawals/:id/complete", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session || !isOwnerUsername(session.username)) return res.status(403).json({ error: "Only the PetRoll owner can complete withdrawals." });
+  const request = withdrawalRequests.get(String(req.params.id));
+  if (!request || request.status !== "pending") return res.status(404).json({ error: "Pending withdrawal not found." });
+  request.status = "completed";
+  request.completedAt = Date.now();
+  withdrawalRequests.delete(request.id);
+  res.json({ ok: true });
+});
+app.post("/api/withdrawals/:id/reject", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session || !isOwnerUsername(session.username)) return res.status(403).json({ error: "Only the PetRoll owner can review withdrawals." });
+  const request = withdrawalRequests.get(String(req.params.id));
+  if (!request || request.status !== "pending") return res.status(404).json({ error: "Pending withdrawal not found." });
+  withdrawalRequests.delete(request.id);
+  res.json({ ok: true });
 });
 app.post("/api/deposits/:id/approve", (req, res) => {
   const session = sessionFromRequest(req);
@@ -361,5 +391,53 @@ io.on("connection", socket => {
   socket.on("rooms:refresh", sendRooms);
   socket.on("disconnect", () => { leaveRoom(socket); players.delete(socket.id); });
 });
+
+// Optional automatic trade detection. Set PS99_PUBLIC_TRADES_URL to the BIG Games
+// public player endpoint for sevvvv with ?include=trades, after enabling public trade-history
+// visibility for that account. API snapshots can be delayed; exact matching is required.
+const seenPs99Trades = new Set();
+async function pollPs99Trades() {
+  const url = process.env.PS99_PUBLIC_TRADES_URL;
+  if (!url) return;
+  try {
+    const response = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const root = payload?.data?.trades || payload?.data || payload;
+    const entries = Array.isArray(root) ? root : (root?.entries || []);
+    for (const trade of entries) {
+      const tradeKey = String(trade.timestamp || "") + ":" + String(trade.otherParty?.uid || trade.otherParty?.displayName || "") + ":" + JSON.stringify(trade.received || []);
+      if (seenPs99Trades.has(tradeKey)) continue;
+      seenPs99Trades.add(tradeKey);
+      if (seenPs99Trades.size > 2000) seenPs99Trades.delete(seenPs99Trades.values().next().value);
+      const trader = String(trade.otherParty?.displayName || "").toLowerCase();
+      if (!trader || !Array.isArray(trade.received) || !trade.received.length) continue;
+      const candidates = [...depositRequests.values()].filter(d => d.status === "pending" && d.username.toLowerCase() === trader);
+      for (const request of candidates) {
+        const wanted = request.itemName.toLowerCase().replace(/^huge\s+|^titanic\s+|^gargantuan\s+/i, "").trim();
+        const matched = trade.received.some(item => {
+          const name = String(item.displayName || item.id || "").toLowerCase();
+          const variant = String(item.variant || "").toLowerCase();
+          return name === wanted || (name + " " + variant).trim() === wanted || name.includes(wanted);
+        });
+        if (!matched) continue;
+        request.status = "verified";
+        request.verifiedAt = Date.now();
+        request.autoDetected = true;
+        const key = request.username.toLowerCase();
+        const assets = depositedAssets.get(key) || [];
+        assets.unshift({ id: request.id, type: request.type, itemName: request.itemName, details: request.details, depositedAt: request.verifiedAt, autoDetected: true });
+        depositedAssets.set(key, assets);
+        depositRequests.delete(request.id);
+        console.log("Auto-detected PS99 deposit for @" + request.username + " via trade history.");
+      }
+    }
+  } catch (err) {
+    console.warn("PS99 trade detection poll failed:", err.message);
+  }
+}
+setInterval(pollPs99Trades, 60000);
+setTimeout(pollPs99Trades, 10000);
+
 const port = process.env.PORT || 3000;
 server.listen(port, "0.0.0.0", () => console.log("PetRoll listening on " + port));
