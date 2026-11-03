@@ -353,3 +353,26 @@ body:after{background-image:radial-gradient(2px 2px at 60px 75px,#fff 98%,transp
 .deposit-form,.deposit-inventory{background:#0b1a11;border-color:#294735}
 .deposit-form input,.deposit-form select{background:#102319;border-color:#2c4b36}
 @media(prefers-reduced-motion:reduce){body:before,body:after{animation:none!important}html{scroll-behavior:auto}.card[href]:hover{transform:none}}
+
+
+/* Color Dice result reveal: each die bounces into place, then settles. */
+#match .dice-results .die-face{
+  animation:colorDieBounce .9s both cubic-bezier(.28,.84,.42,1);
+  will-change:transform;
+}
+#match .dice-results .die-face:nth-child(2){animation-delay:120ms}
+#match .dice-results .die-face:nth-child(3){animation-delay:240ms}
+#match .dice-results .die-face:nth-child(4){animation-delay:360ms}
+#match .dice-results .die-face:nth-child(5){animation-delay:480ms}
+#match .dice-results .die-face:nth-child(6){animation-delay:600ms}
+@keyframes colorDieBounce{
+  0%{opacity:0;transform:translateY(-34px) scale(.72) rotate(-9deg)}
+  42%{opacity:1;transform:translateY(0) scale(1.08) rotate(5deg)}
+  60%{transform:translateY(-13px) scale(.98) rotate(-3deg)}
+  76%{transform:translateY(0) scale(1.02) rotate(1deg)}
+  90%{transform:translateY(-4px) scale(1) rotate(0)}
+  100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  #match .dice-results .die-face{animation:none!important;will-change:auto}
+}
