@@ -144,7 +144,8 @@ app.get("/api/deposits", (req, res) => {
   if (!session) return res.status(401).json({ error: "Verify your Roblox account first." });
   const username = String(session.username).toLowerCase();
   const assets = depositedAssets.get(username) || [];
-  const requests = [...depositRequests.values()].filter(d => d.username.toLowerCase() === username);\n  const withdrawals = [...withdrawalRequests.values()].filter(d => d.username.toLowerCase() === username);
+  const requests = [...depositRequests.values()].filter(d => d.username.toLowerCase() === username);
+  const withdrawals = [...withdrawalRequests.values()].filter(d => d.username.toLowerCase() === username);
   const isOwner = isOwnerUsername(session.username);
   res.json({ assets, requests, withdrawals, pending: isOwner ? [...depositRequests.values()].filter(d => d.status === "pending") : [], pendingWithdrawals: isOwner ? [...withdrawalRequests.values()].filter(d => d.status === "pending") : [], tradeDetection: process.env.PS99_PUBLIC_TRADES_URL ? "configured" : "setup_required" });
 });
