@@ -396,6 +396,20 @@ io.on("connection", socket => {
 // public player endpoint for sevvvv with ?include=trades, after enabling public trade-history
 // visibility for that account. API snapshots can be delayed; exact matching is required.
 const seenPs99Trades = new Set();
+const ps99UsernameCache = new Map();
+async function usernameFromRobloxId(userId) {
+  if (!userId) return "";
+  const key = String(userId);
+  if (ps99UsernameCache.has(key)) return ps99UsernameCache.get(key);
+  try {
+    const response = await fetch("https://users.roblox.com/v1/users/" + encodeURIComponent(key), { headers: { accept: "application/json" }, signal: AbortSignal.timeout(5000) });
+    if (!response.ok) return "";
+    const data = await response.json();
+    const username = String(data.name || "").toLowerCase();
+    if (username) ps99UsernameCache.set(key, username);
+    return username;
+  } catch { return ""; }
+}
 async function pollPs99Trades() {
   const url = process.env.PS99_PUBLIC_TRADES_URL;
   if (!url) return;
@@ -410,7 +424,7 @@ async function pollPs99Trades() {
       if (seenPs99Trades.has(tradeKey)) continue;
       seenPs99Trades.add(tradeKey);
       if (seenPs99Trades.size > 2000) seenPs99Trades.delete(seenPs99Trades.values().next().value);
-      const trader = String(trade.otherParty?.displayName || "").toLowerCase();
+      const trader = await usernameFromRobloxId(trade.otherParty?.uid) || String(trade.otherParty?.displayName || "").toLowerCase();
       if (!trader || !Array.isArray(trade.received) || !trade.received.length) continue;
       const candidates = [...depositRequests.values()].filter(d => d.status === "pending" && d.username.toLowerCase() === trader);
       for (const request of candidates) {
