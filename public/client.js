@@ -31,6 +31,8 @@ function sendName() {
 }
 $("saveName").addEventListener("click", sendName);
 $("name").addEventListener("change", () => socket.emit("player:name", $("name").value.trim() || "Player"));
+$("gameMode").addEventListener("change", updateGameHeading);
+function updateGameHeading() { const coinflip = $("gameMode").value === "coinflip"; $("gameHeading").textContent = coinflip ? "Coinflip" : "Color Dice Duels"; $("create").textContent = coinflip ? "＋ Create Coinflip" : "＋ Create"; }
 $("create").addEventListener("click", () => { sendName(); socket.emit("room:create", { stake: $("stake").value.trim(), mode: $("gameMode").value }); });
 $("refresh").addEventListener("click", () => socket.emit("rooms:refresh"));
 $("ready").addEventListener("click", () => socket.emit("room:ready"));
@@ -70,8 +72,8 @@ function renderColorPicker(room) {
 }
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
 document.querySelectorAll(".coin-choice").forEach(button => button.addEventListener("click", () => socket.emit("room:coinflip-choice", button.dataset.choice)));
-$("coinflipCard").addEventListener("click", () => { $("gameMode").value = "coinflip"; });
-$("coinflipNav").addEventListener("click", () => { $("gameMode").value = "coinflip"; });
+$("coinflipCard").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
+$("coinflipNav").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
 function addChatMessage(message) {
  const root=$("chatMessages"); if(!root)return; const empty=root.querySelector(".chat-empty"); if(empty)empty.remove();
  const row=document.createElement("div"); row.className="chat-message"+(String(message.username).toLowerCase()===String(window.petrollUsername||"").toLowerCase()?" mine":"");
