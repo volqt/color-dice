@@ -135,3 +135,74 @@ socket.on("room:update", room => {
   } else { $("result").classList.add("hidden"); }
 });
 socket.on("disconnect", () => toast("Connection lost. Reconnect to continue."));
+
+
+async function loadDeposits() {
+  const assetsRoot = $("depositAssets"), requestsRoot = $("depositRequests");
+  if (!assetsRoot) return;
+  try {
+    const response = await fetch("/api/deposits", { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) {
+      assetsRoot.innerHTML = '<p class="sub">Verify your Roblox account to submit and view deposits.</p>';
+      return;
+    }
+    assetsRoot.replaceChildren();
+    if (!data.assets.length) assetsRoot.innerHTML = '<p class="sub">No verified deposits yet.</p>';
+    (data.assets || []).forEach(asset => {
+      const row = document.createElement("div"); row.className = "deposit-item";
+      const title = document.createElement("strong"); title.textContent = asset.type + ": " + asset.itemName;
+      const detail = document.createElement("small"); detail.textContent = (asset.details ? asset.details + " · " : "") + "Verified " + new Date(asset.depositedAt).toLocaleString();
+      row.append(title, detail); assetsRoot.append(row);
+    });
+    requestsRoot.replaceChildren();
+    (data.requests || []).forEach(item => {
+      const row = document.createElement("div"); row.className = "deposit-item pending";
+      const title = document.createElement("strong"); title.textContent = "Pending: " + item.type + " — " + item.itemName;
+      const detail = document.createElement("small"); detail.textContent = "Submitted " + new Date(item.createdAt).toLocaleString() + (item.details ? " · " + item.details : "");
+      row.append(title, detail); requestsRoot.append(row);
+    });
+    const admin = $("depositAdmin");
+    if (data.pending && data.pending.length) {
+      admin.classList.remove("hidden");
+      const queue = $("depositQueue"); queue.replaceChildren();
+      data.pending.forEach(item => {
+        const row = document.createElement("div"); row.className = "deposit-item";
+        const title = document.createElement("strong"); title.textContent = item.username + " — " + item.type + ": " + item.itemName;
+        const detail = document.createElement("small"); detail.textContent = (item.details ? item.details + " · " : "") + "Submitted " + new Date(item.createdAt).toLocaleString();
+        const actions = document.createElement("div"); actions.className = "deposit-actions";
+        const approve = document.createElement("button"); approve.className = "small"; approve.textContent = "Verify & add";
+        approve.addEventListener("click", async () => {
+          const r = await fetch("/api/deposits/" + encodeURIComponent(item.id) + "/approve", { method: "POST" });
+          const d = await r.json(); if (!r.ok) { toast(d.error || "Could not verify deposit."); return; }
+          toast("Deposit marked verified."); loadDeposits();
+        });
+        const reject = document.createElement("button"); reject.className = "small ghost"; reject.textContent = "Reject";
+        reject.addEventListener("click", async () => {
+          const r = await fetch("/api/deposits/" + encodeURIComponent(item.id) + "/reject", { method: "POST" });
+          const d = await r.json(); if (!r.ok) { toast(d.error || "Could not reject deposit."); return; }
+          toast("Deposit request rejected."); loadDeposits();
+        });
+        actions.append(approve, reject); row.append(title, detail, actions); queue.append(row);
+      });
+    } else if (admin) { admin.classList.add("hidden"); $("depositQueue").replaceChildren(); }
+  } catch {
+    assetsRoot.innerHTML = '<p class="sub">Could not load deposits right now. Refresh and try again.</p>';
+  }
+}
+$("depositForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const message = $("depositMessage"); message.textContent = "Submitting request…";
+  try {
+    const response = await fetch("/api/deposits/request", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: $("depositType").value, itemName: $("depositItem").value.trim(), details: $("depositDetails").value.trim() })
+    });
+    const data = await response.json();
+    if (!response.ok) { message.textContent = data.error || "Could not submit deposit."; return; }
+    message.textContent = "Request submitted. Your pet will appear in verified deposits after the in-game trade is checked.";
+    $("depositItem").value = ""; $("depositDetails").value = "";
+    loadDeposits();
+  } catch { message.textContent = "Connection error. Please try again."; }
+});
+loadDeposits();
