@@ -13,6 +13,9 @@ const rooms = new Map();
 const players = new Map();
 const balancesByUsername = new Map();
 const challenges = new Map();
+const depositRequests = new Map();
+const depositedAssets = new Map();
+let nextDepositId = 1;
 const startingGems = 1000;
 const ownerUsername = "volqtss";
 const isOwnerUsername = username => String(username || "").toLowerCase() === ownerUsername;
@@ -133,6 +136,51 @@ app.get("/api/me", (req, res) => {
   const session = sessionFromRequest(req);
   if (!session) return res.json({ authenticated: false });
   res.json({ authenticated: true, username: session.username, userId: session.id, isOwner: isOwnerUsername(session.username) });
+});
+app.get("/api/deposits", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session) return res.status(401).json({ error: "Verify your Roblox account first." });
+  const username = String(session.username).toLowerCase();
+  const assets = depositedAssets.get(username) || [];
+  const requests = [...depositRequests.values()].filter(d => d.username.toLowerCase() === username);
+  const isOwner = isOwnerUsername(session.username);
+  res.json({ assets, requests, pending: isOwner ? [...depositRequests.values()].filter(d => d.status === "pending") : [] });
+});
+app.post("/api/deposits/request", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session) return res.status(401).json({ error: "Verify your Roblox account first." });
+  const type = String(req.body?.type || "");
+  const itemName = String(req.body?.itemName || "").trim().slice(0, 100);
+  const details = String(req.body?.details || "").trim().slice(0, 250);
+  if (!["Huge", "Titanic", "Gargantuan", "PS99 gems"].includes(type)) return res.status(400).json({ error: "Choose a supported deposit type." });
+  if (!itemName) return res.status(400).json({ error: "Enter the pet name or amount of PS99 gems." });
+  const username = session.username;
+  const request = { id: String(nextDepositId++), username, type, itemName, details, status: "pending", createdAt: Date.now() };
+  depositRequests.set(request.id, request);
+  res.json({ ok: true, request });
+});
+app.post("/api/deposits/:id/approve", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session || !isOwnerUsername(session.username)) return res.status(403).json({ error: "Only the PetRoll owner can verify deposits." });
+  const request = depositRequests.get(String(req.params.id));
+  if (!request || request.status !== "pending") return res.status(404).json({ error: "Pending deposit request not found." });
+  request.status = "verified";
+  request.verifiedAt = Date.now();
+  const key = request.username.toLowerCase();
+  const assets = depositedAssets.get(key) || [];
+  assets.unshift({ id: request.id, type: request.type, itemName: request.itemName, details: request.details, depositedAt: request.verifiedAt });
+  depositedAssets.set(key, assets);
+  depositRequests.delete(request.id);
+  res.json({ ok: true });
+});
+app.post("/api/deposits/:id/reject", (req, res) => {
+  const session = sessionFromRequest(req);
+  if (!session || !isOwnerUsername(session.username)) return res.status(403).json({ error: "Only the PetRoll owner can review deposits." });
+  const request = depositRequests.get(String(req.params.id));
+  if (!request || request.status !== "pending") return res.status(404).json({ error: "Pending deposit request not found." });
+  request.status = "rejected";
+  depositRequests.delete(request.id);
+  res.json({ ok: true });
 });
 app.post("/api/logout", (req, res) => {
   res.setHeader("Set-Cookie", cookieName + "=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
