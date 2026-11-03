@@ -405,19 +405,20 @@ io.on("connection", socket => {
     const room = p.room && rooms.get(p.room);
     if (!room) return socket.emit("error:message", "Join a coinflip match first.");
     if (room.mode !== "coinflip") return socket.emit("error:message", "This is a Color Dice match. Create or join a Coinflip match to pick heads or tails.");
-    if (!room.green || !room.red) return socket.emit("error:message", "Waiting for another player to join before you can pick.");
+    if (!room.green) return socket.emit("error:message", "This match is not ready yet.");
     if (room.result) return socket.emit("error:message", "This match has finished. Create another match to play again.");
     const choice = String(rawChoice || "").toLowerCase();
     if (!["heads", "tails"].includes(choice)) return;
-    const side = room.green.id === socket.id ? "green" : room.red.id === socket.id ? "red" : null;
+    const side = room.green.id === socket.id ? "green" : room.red && room.red.id === socket.id ? "red" : null;
     if (!side) return;
-    const opponentSide = side === "green" ? "red" : "green";
-    if (room[opponentSide].choice === choice) return socket.emit("error:message", "Your opponent chose " + choice + ". Pick the other side.");
-    room[side].choice = choice; room[side].ready = true;
-    if (room.green.choice && room.red.choice) resolveCoinflip(room);
+    const opponent = room[side === "green" ? "red" : "green"];
+    if (opponent && opponent.choice === choice) return socket.emit("error:message", "Your opponent chose " + choice + ". Pick the other side.");
+    room[side].choice = choice;
+    room[side].ready = true;
+    if (room.green.choice && room.red && room.red.choice) resolveCoinflip(room);
     roomUpdate(room);
   });
-  socket.on("room:ready", () => {
+    socket.on("room:ready", () => {
     const p = requirePlayer(socket); if (!p) return;
     const room = p && rooms.get(p.room);
     if (!room || !room.green || !room.red || room.result) return;
