@@ -201,7 +201,9 @@ function resolveRound(room) {
   const winnerSide = scoreGreen > scoreRed ? "green" : "red";
   const winner = room[winnerSide];
   const loser = room[winnerSide === "green" ? "red" : "green"];
-  winner.gems += room.stake;
+  const tax = Math.floor(room.stake * 0.10);
+  const winnerPayout = room.stake - tax;
+  winner.gems += winnerPayout;
   loser.gems -= room.stake;
   const winnerPlayer = players.get(winner.id);
   const loserPlayer = players.get(loser.id);
@@ -209,7 +211,7 @@ function resolveRound(room) {
   if (loserPlayer) loserPlayer.gems = loser.gems;
   balancesByUsername.set(String(winner.name).toLowerCase(), winner.gems);
   balancesByUsername.set(String(loser.name).toLowerCase(), loser.gems);
-  room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, pot: room.stake * 2, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice!" };
+  room.result = { winner: winnerSide, winnerName: winner.name, dice, scoreGreen, scoreRed, greenColors: room.green.colors, redColors: room.red.colors, stake: room.stake, pot: winnerPayout, tax, message: winner.name + " wins with " + (winnerSide === "green" ? scoreGreen : scoreRed) + " matching dice! Winner receives " + winnerPayout.toLocaleString("en-US") + " gems after 10% tax; loser receives nothing." };
   if (winnerPlayer) io.to(winner.id).emit("balance", winnerPlayer.gems);
   if (loserPlayer) io.to(loser.id).emit("balance", loserPlayer.gems);
 }
