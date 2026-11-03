@@ -32,8 +32,8 @@ function sendName() {
 $("saveName").addEventListener("click", sendName);
 $("name").addEventListener("change", () => socket.emit("player:name", $("name").value.trim() || "Player"));
 $("gameMode").addEventListener("change", updateGameHeading);
-function updateGameHeading() { const coinflip = $("gameMode").value === "coinflip"; $("gameHeading").textContent = coinflip ? "Coinflip" : "Color Dice Duels"; $("create").textContent = coinflip ? "＋ Create Coinflip" : "＋ Create"; }
-$("create").addEventListener("click", () => { sendName(); socket.emit("room:create", { stake: $("stake").value.trim(), mode: $("gameMode").value }); });
+function updateGameHeading() { const coinflip = $("gameMode").value === "coinflip"; $("gameHeading").textContent = coinflip ? "Coinflip" : "Color Dice Duels"; $("create").textContent = coinflip ? "＋ Create Coinflip" : "＋ Create"; $("coinflipLengthWrap").classList.toggle("hidden", !coinflip); }
+$("create").addEventListener("click", () => { sendName(); socket.emit("room:create", { stake: $("stake").value.trim(), mode: $("gameMode").value, targetWins: Number($("coinflipLength").value) }); });
 $("refresh").addEventListener("click", () => socket.emit("rooms:refresh"));
 $("ready").addEventListener("click", () => socket.emit("room:ready"));
 const colorNames = {red:"Red",orange:"Orange",yellow:"Yellow",green:"Green",blue:"Blue",purple:"Purple"};
@@ -134,16 +134,17 @@ socket.on("room:update", room => {
   const coinflip = room.mode === "coinflip";
   $("colorPickPanel").classList.toggle("hidden", coinflip);
   $("coinflipPickPanel").classList.toggle("hidden", !coinflip);
-  $("coinflipHint").textContent = !room.red ? "Waiting for an opponent to join." : ("Your pick: " + (myCoinflipChoice(room) || "not chosen") + ". The players must choose opposite sides.");
+  $("coinflipHint").textContent = !room.red ? "Waiting for an opponent to join." : ("First to " + (room.targetWins || 1) + " · Score " + (room.greenWins || 0) + "-" + (room.redWins || 0) + ". " + (room.lastRound && !room.result ? "Round " + room.lastRound.roundNumber + " complete — pick again! " : "") + "Your pick: " + (myCoinflipChoice(room) || "not chosen") + ". Choose opposite sides.");
   document.querySelectorAll(".coin-choice").forEach(button => { const mine = myCoinflipChoice(room); button.classList.toggle("selected", mine === button.dataset.choice); button.disabled = !room.red || !!room.result || (isMyGreen(room) ? room.redChoice : room.greenChoice) === button.dataset.choice; });
   renderColorPicker(room);
   $("redReady").textContent = room.red ? (room.redReady ? "Ready ✓" : "Not ready") : "Open seat";
   $("roomBadge").textContent = coinflip ? "COINFLIP" : "COLOR DICE";
-  $("matchInfo").textContent = room.result ? "The match is complete!" : ("Stake: " + formatGems(room.stake) + " demo gems each. " + (coinflip ? "Pick opposite sides; the coin flips when both have chosen." : "Pick 2 colors each — the dice roll automatically when both players finish."));
+  $("matchInfo").textContent = room.result ? "The match is complete!" : ("Stake: " + formatGems(room.stake) + " demo gems each. " + (coinflip ? ("First to " + (room.targetWins || 1) + " wins the match. Score " + (room.greenWins || 0) + "-" + (room.redWins || 0) + ".") : "Pick 2 colors each — the dice roll automatically when both players finish."));
   $("ready").disabled = !room.green || !room.red || !!room.result || ((room.green === $("name").value && (room.greenReady || (room.greenColors || []).length !== 2)) || (room.red === $("name").value && (room.redReady || (room.redColors || []).length !== 2)));
-  if (room.result) {
+  if (room.result || (coinflip && room.lastRound)) {
     $("ready").disabled = true;
-    $("result").innerHTML = coinflip ? '<div class="coin-result">🪙 <span>' + String(room.result.flip || "").toUpperCase() + '</span> 🪙</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + (room.result.greenChoice || room.greenChoice || "—") + ' · Red: ' + (room.result.redChoice || room.redChoice || "—") + '</div><small>Winner payout: ' + formatGems(room.result.pot) + ' demo gems</small>' : '<div class="dice-results">' + (room.result.dice || []).map((c,i) => '<span class="die-face die-' + c + '" style="animation-delay:' + (i * 120) + 'ms">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + formatGems(room.result.pot) + ' demo gems</small>';
+    const flipData = room.result || room.lastRound;
+    $("result").innerHTML = coinflip ? '<div class="coin-result">🪙 <span>' + String(flipData.flip || "").toUpperCase() + '</span> 🪙</div><strong>' + (room.result ? (room.result.message || ((room.result.winnerName || "Player") + " wins!")) : ((flipData.winnerName || "Player") + " wins round " + flipData.roundNumber + "!")) + '</strong><div class="scoreline">Score: ' + (room.greenWins || 0) + ' - ' + (room.redWins || 0) + ' · First to ' + (room.targetWins || 1) + '</div>' + (room.result ? '<small>Winner payout: ' + formatGems(room.result.pot) + ' demo gems</small>' : '<small>Choose again for the next round.</small>') : '<div class="dice-results">' + (room.result.dice || []).map((c,i) => '<span class="die-face die-' + c + '" style="animation-delay:' + (i * 120) + 'ms">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + formatGems(room.result.pot) + ' demo gems</small>';
     $("result").classList.remove("hidden");
   } else { $("result").classList.add("hidden"); }
 });
