@@ -138,7 +138,7 @@ socket.on("disconnect", () => toast("Connection lost. Reconnect to continue."));
 
 
 async function loadDeposits() {
-  const assetsRoot = $("depositAssets"), requestsRoot = $("depositRequests");
+  const assetsRoot = $("depositAssets"), requestsRoot = $("depositRequests"), withdrawRoot = $("withdrawRequests");
   if (!assetsRoot) return;
   try {
     const response = await fetch("/api/deposits", { cache: "no-store" });
@@ -185,7 +185,19 @@ async function loadDeposits() {
         });
         actions.append(approve, reject); row.append(title, detail, actions); queue.append(row);
       });
-    } else if (admin) { admin.classList.add("hidden"); $("depositQueue").replaceChildren(); }
+      const wq=$("withdrawQueue"); wq.replaceChildren();
+      (data.pendingWithdrawals || []).forEach(item => {
+        const row=document.createElement("div");row.className="deposit-item";
+        const title=document.createElement("strong");title.textContent=item.username+" — "+item.itemName;
+        const detail=document.createElement("small");detail.textContent=(item.details?item.details+" · ":"")+"Requested "+new Date(item.createdAt).toLocaleString();
+        const actions=document.createElement("div");actions.className="deposit-actions";
+        const complete=document.createElement("button");complete.className="small";complete.textContent="Mark sent";
+        complete.addEventListener("click",async()=>{const r=await fetch("/api/withdrawals/"+encodeURIComponent(item.id)+"/complete",{method:"POST"});const d=await r.json();if(!r.ok){toast(d.error||"Could not complete withdrawal.");return;}toast("Withdrawal marked sent.");loadDeposits();});
+        const reject=document.createElement("button");reject.className="small ghost";reject.textContent="Reject";
+        reject.addEventListener("click",async()=>{const r=await fetch("/api/withdrawals/"+encodeURIComponent(item.id)+"/reject",{method:"POST"});const d=await r.json();if(!r.ok){toast(d.error||"Could not reject withdrawal.");return;}toast("Withdrawal rejected.");loadDeposits();});
+        actions.append(complete,reject);row.append(title,detail,actions);wq.append(row);
+      });
+    } else if (admin) { admin.classList.add("hidden"); $("depositQueue").replaceChildren(); $("withdrawQueue").replaceChildren(); }
   } catch {
     assetsRoot.innerHTML = '<p class="sub">Could not load deposits right now. Refresh and try again.</p>';
   }
@@ -206,3 +218,15 @@ $("depositForm")?.addEventListener("submit", async event => {
   } catch { message.textContent = "Connection error. Please try again."; }
 });
 loadDeposits();
+
+$("withdrawForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const message=$("withdrawMessage"); message.textContent="Submitting withdrawal request…";
+  try {
+    const response=await fetch("/api/withdrawals/request",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({itemName:$("withdrawItem").value.trim(),details:$("withdrawDetails").value.trim()})});
+    const data=await response.json();
+    if(!response.ok){message.textContent=data.error||"Could not submit withdrawal.";return;}
+    message.textContent="Withdrawal request submitted. It will be marked complete after the item is sent in PS99.";
+    $("withdrawItem").value="";$("withdrawDetails").value="";loadDeposits();
+  } catch { message.textContent="Connection error. Please try again."; }
+});
