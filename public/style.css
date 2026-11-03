@@ -265,7 +265,7 @@ body{background:radial-gradient(ellipse at 50% -30%,#1a2b4b 0%,transparent 55%),
 
 
 /* Coinflip mode */
-.create{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end}
+.create{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;align-items:end}
 .create select{width:100%;min-height:43px;padding:11px 12px;border:1px solid #2b344a;border-radius:8px;background:#0b101a;color:#f4f8fc}
 .coinflip-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
 .coin-choice{min-height:82px;padding:18px;border:1px solid #334768;border-radius:13px;background:linear-gradient(145deg,#1a2b47,#111b2c);color:#f5f7ff;font-size:17px;font-weight:800;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
