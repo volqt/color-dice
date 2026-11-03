@@ -74,7 +74,7 @@ function renderColorPicker(room) {
   $("colorHint").textContent = "Choose 2 different colors (" + mine.length + "/2). Colors picked by your opponent are unavailable.";
 }
 $("leave").addEventListener("click", () => socket.emit("room:leave"));
-document.querySelectorAll(".coin-choice").forEach(button => button.addEventListener("click", () => { if (!currentRoom) { toast("Join a coinflip room first."); return; } if (!socket.connected) { toast("Reconnecting — try again in a moment."); return; } socket.emit("room:coinflip-choice", button.dataset.choice); }));
+document.addEventListener("click", event => { const button = event.target.closest(".coin-choice"); if (!button) return; event.preventDefault(); event.stopPropagation(); if (!currentRoom) { toast("Join a coinflip room first."); return; } if (!socket.connected) { toast("Reconnecting — try again in a moment."); return; } if (button.disabled) return; socket.emit("room:coinflip-choice", button.dataset.choice); });
 $("coinflipCard").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
 $("coinflipNav").addEventListener("click", () => { $("gameMode").value = "coinflip"; updateGameHeading(); });
 function addChatMessage(message) {
