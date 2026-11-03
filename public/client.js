@@ -19,6 +19,9 @@ async function setAvatar(elementId, userId) {
 let currentRoom = null;
 let lastRoom = null;
 let toastTimer;
+let coinflipAnimationRound = null;
+let coinflipAnimationDone = true;
+let coinflipAnimationTimer = null;
 function toast(message) {
   const el = $("toast"); el.textContent = message; el.classList.remove("hidden");
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.add("hidden"), 3500);
@@ -144,7 +147,24 @@ socket.on("room:update", room => {
   if (room.result || (coinflip && room.lastRound)) {
     $("ready").disabled = true;
     const flipData = room.result || room.lastRound;
-    $("result").innerHTML = coinflip ? '<div class="coin-result">🪙 <span>' + String(flipData.flip || "").toUpperCase() + '</span> 🪙</div><strong>' + (room.result ? (room.result.message || ((room.result.winnerName || "Player") + " wins!")) : ((flipData.winnerName || "Player") + " wins round " + flipData.roundNumber + "!")) + '</strong><div class="scoreline">Score: ' + (room.greenWins || 0) + ' - ' + (room.redWins || 0) + ' · First to ' + (room.targetWins || 1) + '</div>' + (room.result ? '<small>Winner payout: ' + formatGems(room.result.pot) + ' demo gems</small>' : '<small>Choose again for the next round.</small>') : '<div class="dice-results">' + (room.result.dice || []).map((c,i) => '<span class="die-face die-' + c + '" style="animation-delay:' + (i * 120) + 'ms">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + formatGems(room.result.pot) + ' demo gems</small>';
+    if (coinflip) {
+      const roundKey = room.code + ":" + (flipData.roundNumber || 1);
+      if (coinflipAnimationRound !== roundKey) {
+        coinflipAnimationRound = roundKey;
+        coinflipAnimationDone = false;
+        clearTimeout(coinflipAnimationTimer);
+        coinflipAnimationTimer = setTimeout(() => {
+          if (coinflipAnimationRound !== roundKey) return;
+          coinflipAnimationDone = true;
+          const face = $("result").querySelector(".coin-face");
+          if (face) { face.textContent = String(flipData.flip || "").toUpperCase(); face.classList.remove("coin-spinning"); face.classList.add("coin-landed"); }
+        }, 1400);
+      }
+      const spinning = !coinflipAnimationDone;
+      $("result").innerHTML = '<div class="coin-result"><span class="coin-emoji">🪙</span><span class="coin-face ' + (spinning ? 'coin-spinning' : 'coin-landed') + '">' + (spinning ? 'FLIPPING' : String(flipData.flip || "").toUpperCase()) + '</span><span class="coin-emoji">🪙</span></div><strong>' + (room.result ? (room.result.message || ((room.result.winnerName || "Player") + " wins!")) : ((flipData.winnerName || "Player") + " wins round " + flipData.roundNumber + "!")) + '</strong><div class="scoreline">Score: ' + (room.greenWins || 0) + ' - ' + (room.redWins || 0) + ' · First to ' + (room.targetWins || 1) + '</div>' + (room.result ? '<small>Winner payout: ' + formatGems(room.result.pot) + ' demo gems</small>' : '<small>Choose again for the next round.</small>');
+    } else {
+      $("result").innerHTML = '<div class="dice-results">' + (room.result.dice || []).map((c,i) => '<span class="die-face die-' + c + '" style="animation-delay:' + (i * 120) + 'ms">' + colorNames[c] + '</span>').join("") + '</div><strong>' + (room.result.message || ((room.result.winnerName || "Player") + " wins!")) + '</strong><div class="scoreline">Green: ' + room.result.scoreGreen + ' · Red: ' + room.result.scoreRed + '</div><small>Pot: ' + formatGems(room.result.pot) + ' demo gems</small>';
+    }
     $("result").classList.remove("hidden");
   } else { $("result").classList.add("hidden"); }
 });
